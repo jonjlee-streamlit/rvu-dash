@@ -6,7 +6,7 @@ from datetime import date
 # Mapping from provider's short name to key in source data
 ALIAS_TO_NAME = {"Lee": "Lee , Jonathan MD"}
 
-def render_sidebar():
+def sidebar():
     """Render widgets on sidebar for configuring dashboard"""
 
     st.sidebar.header("Select RVU Data:")
@@ -26,6 +26,5 @@ def render():
     """Render streamlit app"""
 
     # Add sidebar widgets
+    sidebar()
 
-
-    provider_key = ALIAS_TO_NAME.get(provider, provider)
