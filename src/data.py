@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pprint import pformat
 
 # Columns to use from Excel sheet and the corresponding column names
-SOURCE_COLUMNS = "B:F,H,J,M,O,Q,R,S"
+SOURCE_COLUMNS = "B:E,G,H,I,K,L,N,O,P"
 COLUMN_NAMES = [
     "posted_date",
     "date",
@@ -60,7 +60,7 @@ def fetch_file_or_url(filename_or_url):
 
     # Try to read as local file if url doesn't start with http
     if not filename_or_url.lower().startswith("http"):
-        with open(filename_or_url, "r") as f:
+        with open(filename_or_url, "rb") as f:
             return f.read()
 
     # Read as URL
@@ -80,8 +80,7 @@ def fetch_file_or_url(filename_or_url):
 
 def excel_bytes_to_df(byts):
     """Convert Excel file to dataframe"""
-    df = pd.DataFrame()
-    data = pd.read_excel(
+    df = pd.read_excel(
         io.BytesIO(byts),
         usecols=SOURCE_COLUMNS,
         names=COLUMN_NAMES,
@@ -107,7 +106,7 @@ def fetch(filename_or_urls: list[str]) -> RvuData:
     for f in filename_or_urls:
         # Read source Excel data and append into DataFrame
         byts = fetch_file_or_url(f)
-        df = df.append(excel_bytes_to_df(byts))
+        df = pd.concat([df, excel_bytes_to_df(byts)])
 
     # Return data
     return RvuData(
