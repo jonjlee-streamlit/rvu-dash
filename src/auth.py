@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def authenticate():
     """Simple, non-encrypted password authentication stored in streamlit environment and session state"""
 
@@ -13,12 +14,14 @@ def authenticate():
 
     if "authn" not in st.session_state:
         # First run, show input for password.
+        st.title("RVU Dashboard")
         st.text_input(
             "Password", type="password", on_change=password_entered, key="password"
         )
         return False
     elif not st.session_state["authn"]:
         # Password not correct, show input + error.
+        st.title("RVU Dashboard")
         st.text_input(
             "Password", type="password", on_change=password_entered, key="password"
         )
