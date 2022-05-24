@@ -10,6 +10,8 @@ def config_from_sidebar(data_start_date: date, data_end_date: date) -> tuple:
 
     start_date, end_date, compare_start_date, compare_end_date = None, None, None, None
 
+    st.sidebar.title("RVU Dashboard")
+
     # Filter options by provider and dates
     st.sidebar.subheader("Select Provider and Dates:")
     provider = st.sidebar.selectbox(
@@ -25,7 +27,7 @@ def config_from_sidebar(data_start_date: date, data_end_date: date) -> tuple:
         st.sidebar.subheader("Compare To:")
         date_col1, date_col2 = st.sidebar.columns(2)
         compare_start_date = date_col1.date_input(
-            "Start Date:", key="compare_start", value=date(2020, 1, 1)
+            "Start Date:", key="compare_start", value=data_start_date
         )
         compare_end_date = date_col2.date_input(
             "End Date:", key="compare_end", value=date.today()
@@ -65,11 +67,21 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         colR.metric("Total wRVU", round(cmp_stats["ttl_wrvu"]))
         colR.metric("wRVU / encounter", round(cmp_stats["wrvu_per_encs"], 2))
 
+    # Graphs of number of visits
+    df_encounters_by_month = partitions["all_encs"].copy()
+    df_encounters_by_month["Month"] = df_encounters_by_month["date"].apply(
+        lambda x: x.date().strftime("%Y-%m")
+    )
+    encounters_by_month_src = (
+        df_encounters_by_month.groupby("Month").mrn.count().reset_index()
+    )
+    encounters_by_month_src.columns = ["Month", "Encounters"]
+    st.bar_chart(encounters_by_month_src)
+    # encounters_by_month_fig = px.bar(encounters_by_month_src, x='Month', y='Encounters', text='Encounters', text_auto='i')
+
 
 def render() -> None:
     """Main streamlit app entry point"""
-
-    st.sidebar.title("RVU Dashboard")
 
     # Authenticate user
     if not authenticate():
