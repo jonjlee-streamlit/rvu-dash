@@ -161,20 +161,15 @@ def _calc_partitions(df):
     partitions["outpt_medicaid_encs"] = df_outpt_encs[df_outpt_encs.medicaid]
     partitions["outpt_commercial_encs"] = df_outpt_encs[~df_outpt_encs.medicaid]
 
-    # Hospital charges - rather than match on CPT codes, filter by service location
-    #
-    # If we do need to use CPT codes, remove extra time codes, such as 99292 (critical care, add'l 30 min) and
-    # 99464 (delivery attendance - will always bill with H&P or consult)
-    #
-    # inpt_codes = "9946[0-5]|9923[89]"  # newborn attendance, resusc, admit, progress, d/c, same day
-    # inpt_codes += "|992[23][1-3]"  # inpatient admit, progress
-    # inpt_codes += "|9947[7-9]|99480"  # intensive care
-    # inpt_codes += "|9929[12]"  # transfer or critical care
-    # inpt_codes += "|9925[3-5]"  # inpatient consult
-    # inpt_codes += "|9921[89]|9922[1-6]|9923[1-9]"  # peds admit, progress, d/c
-    # r_inpt = re.compile(inpt_codes)
-    #
-    df_inpt_encs = df[df.inpatient]
+    # Hospital charges - filter by service location and CPT codes
+    inpt_codes = "9946[023]|9923[89]"  # newborn attendance, resusc, admit, progress, d/c, same day
+    inpt_codes += "|992[23][1-3]"  # inpatient admit, progress
+    inpt_codes += "|9947[7-9]|99480"  # intensive care
+    inpt_codes += "|99291"  # transfer or critical care (not additional time code 99292)
+    inpt_codes += "|9925[3-5]"  # inpatient consult
+    inpt_codes += "|9921[89]|9922[1-6]|9923[1-9]"  # peds admit, progress, d/c
+    r_inpt = re.compile(inpt_codes)
+    df_inpt_encs = df[df.inpatient & df.cpt.apply(lambda cpt: bool(r_inpt.match(cpt)))]
     partitions["inpt_encs"] = df_inpt_encs
 
     df_all_encs = pd.concat([df_outpt_encs, df_inpt_encs])
