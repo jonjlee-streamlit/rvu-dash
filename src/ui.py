@@ -15,7 +15,8 @@ def config_from_sidebar(data_start_date: date, data_end_date: date) -> tuple:
     # Filter options by provider and dates
     st.sidebar.subheader("Select Provider and Dates:")
     provider = st.sidebar.selectbox(
-        "Provider:", ["Gordon", "Katie", "Lee", "Mike", "Shields"]
+        "Provider:",
+        ["Select a Provider", "Gordon", "Katie", "Lee", "Mike", "Shields"],
     )
     date_col1, date_col2 = st.sidebar.columns(2)
     start_date = date_col1.date_input("Start Date:", value=data_start_date)
@@ -38,8 +39,12 @@ def config_from_sidebar(data_start_date: date, data_end_date: date) -> tuple:
 
 def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> None:
     """Builds the main panel using given data of type data.FilteredRvuData"""
+    if data is None:
+        st.markdown("<h5 style='color:#6e6e6e; padding-top:20px;'>Select a provider to get started</h5>", unsafe_allow_html=True)
+        return
+
     df, partitions, stats = data.df, data.partitions, data.stats
-    cmp_stats = compare.stats if compare is not None else None
+    cmp_df, cmp_partitions, cmp_stats = (compare.df, compare.partitions, compare.stats) if compare is not None else (None, None, None)
 
     # Summary stats including overall # patients and wRVUs
     st.header("Summary")
@@ -53,52 +58,21 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         fig.st_summary(stats, colL, colL, colL, colL)
         fig.st_summary(cmp_stats, colR, colR, colR, colR)
 
-    # Number of visits
-    encounters_by_quarter_src = partitions["all_encs"].groupby("quarter").mrn.count().reset_index()
-    encounters_by_quarter_src.columns = ["Quarter", "Encounters"]
-    encounters_by_quarter_fig = px.bar(encounters_by_quarter_src, x="Quarter", y="Encounters", text="Encounters", text_auto="i")
-
-    encounters_by_month_src = partitions["all_encs"].groupby("month").mrn.count().reset_index()
-    encounters_by_month_src.columns = ["Month", "Encounters"]
-    encounters_by_month_fig = px.bar(encounters_by_month_src, x="Month", y="Encounters", text="Encounters", text_auto="i")
-
-    encounters_by_day_src = partitions["all_encs"].groupby("date").mrn.count().reset_index()
-    encounters_by_day_src.columns = ["Date", "Encounters"]
-    encounters_by_day_fig = px.bar(encounters_by_day_src, x="Date", y="Encounters", text="Encounters", text_auto="i")
-
-    ct1, ct2 = st.columns(2)
-    ct1.markdown("<h4 style='text-align:center;'>Encounters By Month</h4>", unsafe_allow_html=True)
-    ct1.plotly_chart(encounters_by_month_fig, use_container_width=True)
-    ct2.markdown("<h4 style='text-align:center;'>By Quarter</h4>", unsafe_allow_html=True)
-    ct2.plotly_chart(encounters_by_quarter_fig, use_container_width=True)
-
-    # wRVUs production. Note that for month/quarter, we are using the charge posted date like the
-    # clinic does, so number match and the user knows what to expect at when comparing to the production report.
-    # However, for wRVU/day, we showing it with the actual visit date, which is more helpful for understanding
-    # actual production.
-    wrvu_by_month_src = df.groupby('posted_month').wrvu.sum().reset_index()
-    wrvu_by_month_src.columns = ['Month', 'wRVUs']
-    wrvu_by_month_fig = px.bar(wrvu_by_month_src, x='Month', y='wRVUs', text='wRVUs', text_auto='.1f', hover_data={'wRVUs': ':.1f'})
-
-    wrvu_by_quarter_src = df.groupby('posted_quarter').wrvu.sum().reset_index()
-    wrvu_by_quarter_src.columns = ['Quarter', 'wRVUs']
-    wrvu_by_quarter_fig = px.bar(wrvu_by_quarter_src, x='Quarter', y='wRVUs', text='wRVUs', text_auto='.1f', hover_data={'wRVUs': ':.1f'})
-
-    wrvu_by_day_src = df.groupby('date').wrvu.sum().reset_index()
-    wrvu_by_day_src.columns = ['Day', 'wRVUs']
-    wrvu_by_day_fig = px.bar(wrvu_by_day_src, x='Day', y='wRVUs', text='wRVUs', text_auto='.1f', hover_data={'wRVUs': ':.1f'})
-
-    ct1, ct2 = st.columns(2)
-    ct1.markdown("<h4 style='text-align:center;'>wRVUs by Month</h4>", unsafe_allow_html=True)
-    ct1.plotly_chart(wrvu_by_month_fig, use_container_width=True)
-    ct2.markdown("<h4 style='text-align:center;'>By Quarter</h4>", unsafe_allow_html=True)
-    ct2.plotly_chart(wrvu_by_quarter_fig, use_container_width=True)
-
-    with st.expander("Daily Information"):
-        st.markdown("<h4 style='text-align:center;'>Daily Encounters</h4>", unsafe_allow_html=True)
-        st.plotly_chart(encounters_by_day_fig, use_container_width=True)
-        st.markdown("<h4 style='text-align:center;'>Daily wRVUs</h4>", unsafe_allow_html=True)
-        st.plotly_chart(wrvu_by_day_fig, use_container_width=True)
+    # Summary graphs
+    if compare is None:
+        main_ct = st.container()
+        quarter_ct = st.expander("By Quarter")
+        daily_ct = st.expander("By Day")
+        fig.st_summary_figs(df, partitions, main_ct, quarter_ct, daily_ct)
+    else:
+        main_ct = st.container()
+        main_colL, main_colR = main_ct.columns(2)
+        quarter_ct = st.expander("By Quarter")
+        quarter_colL, quarter_colR = quarter_ct.columns(2)
+        daily_ct = st.expander("By Day")
+        daily_colL, daily_colR = daily_ct.columns(2)
+        fig.st_summary_figs(df, partitions, main_colL, quarter_colL, daily_colL)
+        fig.st_summary_figs(cmp_df, cmp_partitions, main_colR, quarter_colR, daily_colR)
 
 def render() -> None:
     """Main streamlit app entry point"""
@@ -107,7 +81,8 @@ def render() -> None:
         st.stop()
 
     # Fetch source data
-    rvudata = data.fetch()
+    with st.spinner("Initializing..."):
+        rvudata = data.initialize()
 
     # Add sidebar widgets and get dashboard configuration
     (
