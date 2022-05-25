@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 import datetime as dt
 import streamlit as st
+from . import data_files
 from dataclasses import dataclass
 from pprint import pformat
 
@@ -260,7 +261,7 @@ def _calc_stats(df, partitions):
 
 # Use allow_output_mutation to avoid hashing return value to improve performance
 @st.experimental_memo(show_spinner=False)
-def initialize(filename_or_urls: list[str] = SOURCE_FILES) -> RvuData:
+def initialize(filename_or_urls: list[str]) -> RvuData:
     """Main entry point: retrieve file, src, and parse into DataFrame"""
     if filename_or_urls is None:
         return None
