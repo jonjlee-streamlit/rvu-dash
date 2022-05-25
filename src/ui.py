@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from datetime import date
-from . import data
-from .auth import authenticate
+from . import auth, data, fig
 
 
 def config_from_sidebar(data_start_date: date, data_end_date: date) -> tuple:
@@ -44,47 +44,41 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
     # Summary stats including overall # patients and wRVUs
     st.header("Summary")
     if compare is None:
-        st.write(
-            f"{stats['start_date'].strftime('%a %b %d, %Y')} to {stats['end_date'].strftime('%a %b %d, %Y')}",
-        )
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Encounters", stats["ttl_encs"])
-        col2.metric("Total wRVU", round(stats["ttl_wrvu"]))
-        col3.metric("wRVU / encounter", round(stats["wrvu_per_encs"], 2))
+        dates_ct = st.empty()
+        ct1, ct2, ct3 = st.columns(3)
+        fig.st_summary(stats, dates_ct, ct1, ct2, ct3)
     else:
+        # Write metrics in side-by-side vertical columns
         colL, colR = st.columns(2)
-        colL.write(
-            f"{stats['start_date'].strftime('%a %b %d, %Y')} to {stats['end_date'].strftime('%a %b %d, %Y')}",
-        )
-        colR.write(
-            f"{cmp_stats['start_date'].strftime('%a %b %d, %Y')} to {cmp_stats['end_date'].strftime('%a %b %d, %Y')}",
-        )
-        colL.metric("Encounters", stats["ttl_encs"])
-        colL.metric("Total wRVU", round(stats["ttl_wrvu"]))
-        colL.metric("wRVU / encounter", round(stats["wrvu_per_encs"], 2))
-
-        colR.metric("Encounters", cmp_stats["ttl_encs"])
-        colR.metric("Total wRVU", round(cmp_stats["ttl_wrvu"]))
-        colR.metric("wRVU / encounter", round(cmp_stats["wrvu_per_encs"], 2))
+        fig.st_summary(stats, colL, colL, colL, colL)
+        fig.st_summary(cmp_stats, colR, colR, colR, colR)
 
     # Graphs of number of visits
-    df_encounters_by_month = partitions["all_encs"].copy()
-    df_encounters_by_month["Month"] = df_encounters_by_month["date"].apply(
-        lambda x: x.date().strftime("%Y-%m")
-    )
-    encounters_by_month_src = (
-        df_encounters_by_month.groupby("Month").mrn.count().reset_index()
-    )
+    encounters_by_quarter_src = partitions["all_encs"].groupby("quarter").mrn.count().reset_index()
+    encounters_by_quarter_src.columns = ["Quarter", "Encounters"]
+    encounters_by_quarter_fig = px.bar(encounters_by_quarter_src, x="Quarter", y="Encounters", text="Encounters", text_auto="i")
+
+    encounters_by_month_src = partitions["all_encs"].groupby("month").mrn.count().reset_index()
     encounters_by_month_src.columns = ["Month", "Encounters"]
-    st.bar_chart(encounters_by_month_src)
-    # encounters_by_month_fig = px.bar(encounters_by_month_src, x='Month', y='Encounters', text='Encounters', text_auto='i')
+    encounters_by_month_fig = px.bar(encounters_by_month_src, x="Month", y="Encounters", text="Encounters", text_auto="i")
+
+    encounters_by_day_src = partitions["all_encs"].groupby("date").mrn.count().reset_index()
+    encounters_by_day_src.columns = ["Date", "Encounters"]
+    encounters_by_day_fig = px.bar(encounters_by_day_src, x="Date", y="Encounters", text="Encounters", text_auto="i")
+
+    st.markdown("<h4 style='text-align:center;'>Encounters By Month</h4>", unsafe_allow_html=True)
+    st.plotly_chart(encounters_by_month_fig, use_container_width=True)
+    ct1, ct2 = st.columns(2)
+    ct1.markdown("<h4 style='text-align:center;'>By Quarter</h4>", unsafe_allow_html=True)
+    ct1.plotly_chart(encounters_by_quarter_fig, use_container_width=True)
+    ct2.markdown("<h4 style='text-align:center;'>By Day</h4>", unsafe_allow_html=True)
+    ct2.plotly_chart(encounters_by_day_fig, use_container_width=True)
 
 
 def render() -> None:
     """Main streamlit app entry point"""
-
     # Authenticate user
-    if not authenticate():
+    if not auth.authenticate():
         st.stop()
 
     # Fetch source data
