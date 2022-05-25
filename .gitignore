@@ -1,5 +1,6 @@
 # Streamlit
 .streamlit/
+data/
 
 # Local vscode local settings
 .vscode/
