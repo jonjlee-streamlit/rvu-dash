@@ -14,18 +14,20 @@ def authenticate():
 
     if "authn" not in st.session_state:
         # First run, show input for password.
-        st.title("RVU Dashboard")
-        st.text_input(
+        _, ct, _ = st.columns([1, 2, 1])
+        ct.title("RVU Dashboard")
+        ct.text_input(
             "Password", type="password", on_change=password_entered, key="password"
         )
         return False
     elif not st.session_state["authn"]:
         # Password not correct, show input + error.
-        st.title("RVU Dashboard")
-        st.text_input(
+        _, ct, _ = st.columns([1, 2, 1])
+        ct.title("RVU Dashboard")
+        ct.text_input(
             "Password", type="password", on_change=password_entered, key="password"
         )
-        st.error("Invalid password")
+        ct.error("Invalid password")
         return False
     else:
         return True
