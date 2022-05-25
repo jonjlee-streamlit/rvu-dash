@@ -143,8 +143,10 @@ def _calc_partitions(df):
 
     # Calculate extra columns: 
     # Month (eg. 2022-01) and quarter (eg. 2020-Q01)
-    df["month"] = df["date"].dt.to_period("M").dt.strftime("%Y-%m")
-    df["quarter"] = df["date"].dt.to_period("Q").dt.strftime("%Y Q%q")
+    df["month"] = df.date.dt.to_period("M").dt.strftime("%Y-%m")
+    df["quarter"] = df.date.dt.to_period("Q").dt.strftime("%Y Q%q")
+    df["posted_month"] = df.posted_date.dt.to_period("M").dt.strftime("%Y-%m")
+    df["posted_quarter"] = df.posted_date.dt.to_period("Q").dt.strftime("%Y Q%q")
     # Covered by medicaid?
     r_medicaid = re.compile(r"medicaid", re.IGNORECASE)
     df["medicaid"] = df.insurance.apply(lambda x: bool(r_medicaid.match(x)))

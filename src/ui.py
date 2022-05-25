@@ -53,7 +53,7 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         fig.st_summary(stats, colL, colL, colL, colL)
         fig.st_summary(cmp_stats, colR, colR, colR, colR)
 
-    # Graphs of number of visits
+    # Number of visits
     encounters_by_quarter_src = partitions["all_encs"].groupby("quarter").mrn.count().reset_index()
     encounters_by_quarter_src.columns = ["Quarter", "Encounters"]
     encounters_by_quarter_fig = px.bar(encounters_by_quarter_src, x="Quarter", y="Encounters", text="Encounters", text_auto="i")
@@ -66,14 +66,39 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
     encounters_by_day_src.columns = ["Date", "Encounters"]
     encounters_by_day_fig = px.bar(encounters_by_day_src, x="Date", y="Encounters", text="Encounters", text_auto="i")
 
-    st.markdown("<h4 style='text-align:center;'>Encounters By Month</h4>", unsafe_allow_html=True)
-    st.plotly_chart(encounters_by_month_fig, use_container_width=True)
     ct1, ct2 = st.columns(2)
-    ct1.markdown("<h4 style='text-align:center;'>By Quarter</h4>", unsafe_allow_html=True)
-    ct1.plotly_chart(encounters_by_quarter_fig, use_container_width=True)
-    ct2.markdown("<h4 style='text-align:center;'>By Day</h4>", unsafe_allow_html=True)
-    ct2.plotly_chart(encounters_by_day_fig, use_container_width=True)
+    ct1.markdown("<h4 style='text-align:center;'>Encounters By Month</h4>", unsafe_allow_html=True)
+    ct1.plotly_chart(encounters_by_month_fig, use_container_width=True)
+    ct2.markdown("<h4 style='text-align:center;'>By Quarter</h4>", unsafe_allow_html=True)
+    ct2.plotly_chart(encounters_by_quarter_fig, use_container_width=True)
 
+    # wRVUs production. Note that for month/quarter, we are using the charge posted date like the
+    # clinic does, so number match and the user knows what to expect at when comparing to the production report.
+    # However, for wRVU/day, we showing it with the actual visit date, which is more helpful for understanding
+    # actual production.
+    wrvu_by_month_src = df.groupby('posted_month').wrvu.sum().reset_index()
+    wrvu_by_month_src.columns = ['Month', 'wRVUs']
+    wrvu_by_month_fig = px.bar(wrvu_by_month_src, x='Month', y='wRVUs', text='wRVUs', text_auto='.1f', hover_data={'wRVUs': ':.1f'})
+
+    wrvu_by_quarter_src = df.groupby('posted_quarter').wrvu.sum().reset_index()
+    wrvu_by_quarter_src.columns = ['Quarter', 'wRVUs']
+    wrvu_by_quarter_fig = px.bar(wrvu_by_quarter_src, x='Quarter', y='wRVUs', text='wRVUs', text_auto='.1f', hover_data={'wRVUs': ':.1f'})
+
+    wrvu_by_day_src = df.groupby('date').wrvu.sum().reset_index()
+    wrvu_by_day_src.columns = ['Day', 'wRVUs']
+    wrvu_by_day_fig = px.bar(wrvu_by_day_src, x='Day', y='wRVUs', text='wRVUs', text_auto='.1f', hover_data={'wRVUs': ':.1f'})
+
+    ct1, ct2 = st.columns(2)
+    ct1.markdown("<h4 style='text-align:center;'>wRVUs by Month</h4>", unsafe_allow_html=True)
+    ct1.plotly_chart(wrvu_by_month_fig, use_container_width=True)
+    ct2.markdown("<h4 style='text-align:center;'>By Quarter</h4>", unsafe_allow_html=True)
+    ct2.plotly_chart(wrvu_by_quarter_fig, use_container_width=True)
+
+    with st.expander("Daily Information"):
+        st.markdown("<h4 style='text-align:center;'>Daily Encounters</h4>", unsafe_allow_html=True)
+        st.plotly_chart(encounters_by_day_fig, use_container_width=True)
+        st.markdown("<h4 style='text-align:center;'>Daily wRVUs</h4>", unsafe_allow_html=True)
+        st.plotly_chart(wrvu_by_day_fig, use_container_width=True)
 
 def render() -> None:
     """Main streamlit app entry point"""
