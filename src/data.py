@@ -41,7 +41,7 @@ INPT_LOCATIONS = ["Pullman Regional Hospital IP", "Pullman Regional Hospital OP"
 RE_PROCEDURE_CODES = "54150|41010|120[01][1-8]"
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class RvuData:
     """Data extracted from RVU report from EMR and partitioned by provider"""
 
@@ -115,6 +115,22 @@ def _excel_bytes_to_df(byts):
     df = df[df.posted_date.notnull() & df.provider.notnull()]
     return df
 
+def _calc_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Add extra calculated columns to source data in-place"""
+    df = df.copy()
+    # Month (eg. 2022-01) and quarter (eg. 2020-Q01)
+    df["month"] = df.date.dt.to_period("M").dt.strftime("%Y-%m")
+    df["quarter"] = df.date.dt.to_period("Q").dt.strftime("%Y Q%q")
+    df["posted_month"] = df.posted_date.dt.to_period("M").dt.strftime("%Y-%m")
+    df["posted_quarter"] = df.posted_date.dt.to_period("Q").dt.strftime("%Y Q%q")
+    # Covered by medicaid?
+    r_medicaid = re.compile(r"medicaid", re.IGNORECASE)
+    df["medicaid"] = df.insurance.apply(lambda x: bool(r_medicaid.match(x)))
+    # Inpatient?
+    r_inpt = re.compile(f"^{'|'.join(INPT_LOCATIONS)}$", re.IGNORECASE)
+    df["inpatient"] = df.location.apply(lambda x: bool(r_inpt.match(x)))
+    return df
+
 
 def _split_by(df: pd.DataFrame, column: str) -> dict[str, pd.DataFrame]:
     """
@@ -136,23 +152,10 @@ def _split_by(df: pd.DataFrame, column: str) -> dict[str, pd.DataFrame]:
 
     return views
 
-
+@st.experimental_memo(show_spinner=False)
 def _calc_partitions(df):
     """Partition data into sets meaningful to a user and used for calculating statistics later"""
     partitions = {}
-
-    # Calculate extra columns: 
-    # Month (eg. 2022-01) and quarter (eg. 2020-Q01)
-    df["month"] = df.date.dt.to_period("M").dt.strftime("%Y-%m")
-    df["quarter"] = df.date.dt.to_period("Q").dt.strftime("%Y Q%q")
-    df["posted_month"] = df.posted_date.dt.to_period("M").dt.strftime("%Y-%m")
-    df["posted_quarter"] = df.posted_date.dt.to_period("Q").dt.strftime("%Y Q%q")
-    # Covered by medicaid?
-    r_medicaid = re.compile(r"medicaid", re.IGNORECASE)
-    df["medicaid"] = df.insurance.apply(lambda x: bool(r_medicaid.match(x)))
-    # Inpatient?
-    r_inpt = re.compile(f"^{'|'.join(INPT_LOCATIONS)}$", re.IGNORECASE)
-    df["inpatient"] = df.location.apply(lambda x: bool(r_inpt.match(x)))
 
     # Office encounters - only keep rows that match one of these CPT codes
     r_wcc = re.compile("993[89][1-5]")
@@ -184,6 +187,7 @@ def _calc_partitions(df):
     return partitions
 
 
+@st.experimental_memo(show_spinner=False)
 def _calc_stats(df, partitions):
     """Calculate basic statistics from pre-partitioned list of charges"""
     stats = {}
@@ -255,8 +259,8 @@ def _calc_stats(df, partitions):
 
 
 # Use allow_output_mutation to avoid hashing return value to improve performance
-@st.experimental_memo()
-def fetch(filename_or_urls: list[str] = SOURCE_FILES) -> RvuData:
+@st.experimental_memo(show_spinner=False)
+def initialize(filename_or_urls: list[str] = SOURCE_FILES) -> RvuData:
     """Main entry point: retrieve file, src, and parse into DataFrame"""
     if filename_or_urls is None:
         return None
@@ -268,6 +272,9 @@ def fetch(filename_or_urls: list[str] = SOURCE_FILES) -> RvuData:
         byts = _fetch_file_or_url(f)
         df = pd.concat([df, _excel_bytes_to_df(byts)])
 
+    # Add calculated columns like month/quarter, medicaid, and inpatient
+    df = _calc_columns(df)
+    
     # Split into datasets for each provider
     by_provider = _split_by(df, "provider")
 
