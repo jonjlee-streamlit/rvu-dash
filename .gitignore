@@ -1,6 +1,7 @@
 # Streamlit
 .streamlit/
 data/
+nohup.out
 
 # Local vscode local settings
 .vscode/
