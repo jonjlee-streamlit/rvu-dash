@@ -18,8 +18,6 @@ def get_local():
 def update_local(files, remove_existing):
     if files is None or len(files) == 0:
         return
-    st.write(BASE_PATH)
-    st.write(get_local())
 
     # Ensure base data directory exists
     os.makedirs(BASE_PATH, exist_ok=True)

@@ -11,7 +11,7 @@ def run():
     qps = st.experimental_get_query_params()
     if qps.get("update") == ["1"]:
         # Allow user to upload new data files
-        files, remove_existing = ui.render_upload()
+        files, remove_existing = ui.render_upload(data_files.get_local())
         if files:
             # Write new files to data dir and list contents
             data_files.update_local(files, remove_existing)

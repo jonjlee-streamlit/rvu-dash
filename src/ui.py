@@ -4,9 +4,12 @@ import plotly.express as px
 from datetime import date
 from . import auth, data, fig
 
-def render_upload():
+def render_upload(cur_files=None):
     """Provide a way to upload updated data file"""
     st.header("Updated data files")
+    if cur_files:
+        st.write("Current data files:")
+        st.write(cur_files)
     remove_existing = st.checkbox("Remove existing files after upload")
     files = st.file_uploader("Select files to upload", accept_multiple_files=True)
     return files, remove_existing
