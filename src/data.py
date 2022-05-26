@@ -153,7 +153,6 @@ def _split_by(df: pd.DataFrame, column: str) -> dict[str, pd.DataFrame]:
 
     return views
 
-@st.experimental_memo(show_spinner=False)
 def _calc_partitions(df):
     """Partition data into sets meaningful to a user and used for calculating statistics later"""
     partitions = {}
@@ -188,7 +187,6 @@ def _calc_partitions(df):
     return partitions
 
 
-@st.experimental_memo(show_spinner=False)
 def _calc_stats(df, partitions):
     """Calculate basic statistics from pre-partitioned list of charges"""
     stats = {}
@@ -260,7 +258,7 @@ def _calc_stats(df, partitions):
 
 
 # Use allow_output_mutation to avoid hashing return value to improve performance
-@st.experimental_memo(show_spinner=False)
+@st.cache(show_spinner=False, allow_output_mutation=True)
 def initialize(filename_or_urls: list[str]) -> RvuData:
     """Main entry point: retrieve file, src, and parse into DataFrame"""
     if filename_or_urls is None:
