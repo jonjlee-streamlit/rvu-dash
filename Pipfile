@@ -9,6 +9,7 @@ xlrd = "*"
 plotly = "*"
 protobuf = "==3.20.1"
 arrow = "*"
+typing-extensions = "*"
 
 [dev-packages]
 black = "*"
