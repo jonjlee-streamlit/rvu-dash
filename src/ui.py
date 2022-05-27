@@ -101,3 +101,15 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         daily_colL, daily_colR = daily_ct.columns(2)
         fig.st_summary_figs(df, partitions, main_colL, main_colL, quarter_colL, quarter_colL, daily_colL, daily_colL)
         fig.st_summary_figs(cmp_df, cmp_partitions, main_colR, main_colR, quarter_colR, quarter_colR, daily_colR, daily_colR)
+
+    # Outpatient Summary
+    st.header("Outpatient")
+    sick_visits_ct, sick_vs_well_ct = st.columns(2)
+    fig.st_sick_visits_fig(stats, sick_visits_ct)
+    fig.st_sick_vs_well_fig(stats, sick_vs_well_ct)
+
+    # Inpatient Summary
+    st.header("Inpatient")
+    inpt_enc_ct, inpt_rvu_ct = st.columns(2)
+    fig.st_inpt_vs_outpt_encs_fig(stats, inpt_enc_ct)
+    fig.st_inpt_vs_outpt_rvu_fig(stats, inpt_rvu_ct)
