@@ -10,15 +10,14 @@ from . import data_files
 from dataclasses import dataclass
 from pprint import pformat
 
-# Source data files / URLs
-SOURCE_FILES = ["rvudata.xls"]
 # Columns to use from Excel sheet and the corresponding column names
-SOURCE_COLUMNS = "B:E,G,H,I,K,L,N,O,P"
+SOURCE_COLUMNS = "B,C,D,E,G,H,I,K,N,P,R,S,T"
 COLUMN_NAMES = [
     "posted_date",
     "date",
     "provider",
     "mrn",
+    "visitid",
     "cpt",
     "desc",
     "units",

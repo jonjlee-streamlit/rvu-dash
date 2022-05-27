@@ -5,7 +5,7 @@ import plotly.express as px
 def st_summary(stats, start_date, end_date, dates_ct, ct1, ct2, ct3):
     """Render summary stats"""
     dates_ct.write(
-        f"{start_date.strftime('%a %b %d, %Y')} to {end_date.strftime('%a %b %d, %Y')}",
+        f"{start_date.strftime('%b %d, %Y (%a)')} to {end_date.strftime('%b %d, %Y (%a)')}",
     )
     ct1.metric("Encounters", stats["ttl_encs"])
     ct2.metric("Total wRVU", round(stats["ttl_wrvu"]))

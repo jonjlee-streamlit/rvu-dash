@@ -31,9 +31,9 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
     )
 
     # Preset date filters
-    date_range = config_ct.selectbox("Dates:", ["This year", "This quarter", "This month", "Last year", "Last quarter", "Last month", "Specific dates"])
-    if date_range == "Specific dates":
-        specific_dates = config_ct.date_input("Select dates:", value=(data_start_date, date.today()))
+    date_range = config_ct.selectbox("Dates:", ["Specific dates below", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month"])
+    if date_range == "Specific dates below":
+        specific_dates = config_ct.date_input("Date range:", value=(data_start_date, date.today()))
         if len(specific_dates) > 1:
             # Wait until both start and end dates selected to set date range
             start_date, end_date = specific_dates
@@ -43,8 +43,8 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
     # Option to compare to another date range
     compare_ct = config_ct.expander("Comparison Data")
     compare = compare_ct.checkbox("Show comparison display")
-    compare_date_range = compare_ct.selectbox("Date range:", ["Same days 1 year ago", "Same days 1 month ago", "This year", "Last year", "2 years ago", "This quarter", "Last quarter", "2 quarters ago", "3 quarters ago", "This month", "Last month", "2 months ago", "Specific dates"])
-    if compare_date_range == "Specific dates":
+    compare_date_range = compare_ct.selectbox("Dates:", ["Specific dates below", "Same days 1 month ago", "Same days 1 year ago", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month"])
+    if compare_date_range == "Specific dates below":
         compare_dates = compare_ct.date_input("Date range:", key="compare_dates", value=(data_start_date, date.today()))
         if len(compare_dates) > 1:
             compare_start_date, compare_end_date = compare_dates
