@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from datetime import date
+import datetime as dt
 from . import auth, data, fig
 
 def render_upload(cur_files=None):
@@ -14,39 +14,52 @@ def render_upload(cur_files=None):
     files = st.file_uploader("Select files to upload", accept_multiple_files=True)
     return files, remove_existing
 
-def render_sidebar(data_start_date: date, data_end_date: date) -> tuple:
+def render_sidebar(data_start_date: dt.date, data_end_date: dt.date) -> tuple:
     """Render widgets on sidebar for configuring dashboard"""
 
     start_date, end_date, compare_start_date, compare_end_date = None, None, None, None
 
     st.sidebar.title("RVU Dashboard")
-    form = st.sidebar.form("config")
+    config_ct = st.sidebar
 
     # Filter options by provider and dates
-    form.subheader("Select Provider and Dates:")
-    provider = form.selectbox(
+    provider = config_ct.selectbox(
         "Provider:",
         ["Select a Provider", "Gordon", "Katie", "Lee", "Mike", "Shields"],
     )
-    date_col1, date_col2 = form.columns(2)
-    start_date = date_col1.date_input("Start Date:", value=data_start_date)
-    end_date = date_col2.date_input("End Date:", value=date.today())
+    date_range = config_ct.selectbox("Dates:", ["This month", "Last month", "This year", "Last year", "This quarter", "Last quarter", "Specific dates"])
+    if date_range == "This month":
+        end_date = dt.date.today()
+        start_date = end_date.replace(day=1)
+    elif date_range == "Last month":
+        this_month = dt.date.today().replace(day=1)
+        end_date = this_month - dt.timedelta(days=1) # one day prior to first day of this month
+        start_date = end_date.replace(day=1)
+    elif date_range == "This year":
+        end_date = dt.date.today()
+        start_date = end_date.replace(day=1, month=1)
+    elif date_range == "Last year":
+        this_year = dt.date.today().replace(day=1, month=1)
+        end_date = this_year - dt.timedelta(days=1) # one day prior to Jan 1
+        start_date = end_date.replace(day=1, month=1)
+    elif date_range == "Specific dates":
+        dates = config_ct.date_input("Select dates:", value=(data_start_date, dt.date.today()))
+        if len(dates) > 1:
+            # Wait until both start and end dates selected to set date range
+            start_date, end_date = dates
+    else:
+        start_date, end_date = None, None
 
     # Option to compare to another date range
-    form.subheader("Compare To:")
-    compare = form.checkbox("Enable comparison")
-    date_col1, date_col2 = form.columns(2)
-    compare_start_date = date_col1.date_input(
-        "Start Date:", key="compare_start", value=data_start_date
-    )
-    compare_end_date = date_col2.date_input(
-        "End Date:", key="compare_end", value=date.today()
-    )
+    config_ct.subheader("Compare To:")
+    compare_ct = config_ct.expander("Show options")
+    compare = compare_ct.checkbox("Enable comparison")
+    compare_date_range = compare_ct.selectbox("Date range:", ["Same days last month", "Same days last year", "This month", "Last month", "2 months ago", "This year", "Last year", "This quarter", "Last quarter", "Specific dates"])
+    if date_range == "Specific dates":
+        compare_start_date, compare_end_date = compare_ct.date_input("Date range:", key="compare_dates", value=(data_start_date, dt.date.today()))
     if not compare:
         # Do not perform comparison if enable box is unchecked, so clear dates
         compare_start_date, compare_end_date = None, None
-
-    submitted = form.form_submit_button("Apply")
 
     return (provider, start_date, end_date, compare_start_date, compare_end_date)
 
@@ -54,7 +67,7 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple:
 def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> None:
     """Builds the main panel using given data of type data.FilteredRvuData"""
     if data is None:
-        st.markdown("<h5 style='color:#6e6e6e; padding-top:20px;'>Select a provider to get started</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color:#6e6e6e; padding-top:65px;'>Select a provider and date range</h5>", unsafe_allow_html=True)
         return
 
     df, partitions, stats = data.df, data.partitions, data.stats

@@ -293,7 +293,7 @@ def process(
     # Get master data set for this provider. Param, provider, is the short name
     # that is selected by the user. Use dict to translate to actual name in data.
     name = ALIAS_TO_NAME.get(provider)
-    if name is None:
+    if name is None or start_date is None:
         return None
 
     df = rvudata.by_provider.get(name)
