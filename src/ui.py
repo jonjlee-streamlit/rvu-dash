@@ -104,12 +104,26 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
 
     # Outpatient Summary
     st.header("Outpatient")
-    sick_visits_ct, sick_vs_well_ct = st.columns(2)
-    fig.st_sick_visits_fig(stats, sick_visits_ct)
-    fig.st_sick_vs_well_fig(stats, sick_vs_well_ct)
+    if compare is None:
+        sick_visits_ct, sick_vs_well_ct = st.columns(2)
+        fig.st_sick_visits_fig(stats, sick_visits_ct)
+        fig.st_sick_vs_well_fig(stats, sick_vs_well_ct)
+    else:
+        colL, colR = st.columns(2)
+        fig.st_sick_visits_fig(stats, colL)
+        fig.st_sick_vs_well_fig(stats, colL)
+        fig.st_sick_visits_fig(cmp_stats, colR)
+        fig.st_sick_vs_well_fig(cmp_stats, colR)
 
     # Inpatient Summary
     st.header("Inpatient")
-    inpt_enc_ct, inpt_rvu_ct = st.columns(2)
-    fig.st_inpt_vs_outpt_encs_fig(stats, inpt_enc_ct)
-    fig.st_inpt_vs_outpt_rvu_fig(stats, inpt_rvu_ct)
+    if compare is None:
+        inpt_enc_ct, inpt_rvu_ct = st.columns(2)
+        fig.st_inpt_vs_outpt_encs_fig(stats, inpt_enc_ct)
+        fig.st_inpt_vs_outpt_rvu_fig(stats, inpt_rvu_ct)
+    else:
+        colL, colR = st.columns(2)
+        fig.st_inpt_vs_outpt_encs_fig(stats, colL)
+        fig.st_inpt_vs_outpt_rvu_fig(stats, colL)
+        fig.st_inpt_vs_outpt_encs_fig(cmp_stats, colR)
+        fig.st_inpt_vs_outpt_rvu_fig(cmp_stats, colR)
