@@ -2,9 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import datetime as dt
+import arrow
+from datetime import date
+
 from . import auth, data, fig
 
-def render_upload(cur_files=None):
+def render_upload(cur_files: list = None):
     """Provide a way to upload updated data file"""
     st.header("Updated data files")
     if cur_files:
@@ -14,7 +17,7 @@ def render_upload(cur_files=None):
     files = st.file_uploader("Select files to upload", accept_multiple_files=True)
     return files, remove_existing
 
-def render_sidebar(data_start_date: dt.date, data_end_date: dt.date) -> tuple:
+def render_sidebar(data_start_date: date, data_end_date: date) -> tuple:
     """Render widgets on sidebar for configuring dashboard"""
 
     start_date, end_date, compare_start_date, compare_end_date = None, None, None, None
@@ -22,28 +25,35 @@ def render_sidebar(data_start_date: dt.date, data_end_date: dt.date) -> tuple:
     st.sidebar.title("RVU Dashboard")
     config_ct = st.sidebar
 
-    # Filter options by provider and dates
+    # Filter options for providers
     provider = config_ct.selectbox(
         "Provider:",
         ["Select a Provider", "Gordon", "Katie", "Lee", "Mike", "Shields"],
     )
+
+    # Preset date filters
     date_range = config_ct.selectbox("Dates:", ["This month", "Last month", "This year", "Last year", "This quarter", "Last quarter", "Specific dates"])
+    today = arrow.now().floor("day")
     if date_range == "This month":
-        end_date = dt.date.today()
-        start_date = end_date.replace(day=1)
+        start_date = today.floor("month").date()
+        end_date = today.date()
     elif date_range == "Last month":
-        this_month = dt.date.today().replace(day=1)
-        end_date = this_month - dt.timedelta(days=1) # one day prior to first day of this month
-        start_date = end_date.replace(day=1)
+        start_date = today.floor("month").shift(months=-1).date()
+        end_date = today.floor("month").shift(days=-1).date() # one day prior to first day of this month
     elif date_range == "This year":
-        end_date = dt.date.today()
-        start_date = end_date.replace(day=1, month=1)
+        start_date = today.floor("year").date()
+        end_date = today.date()
     elif date_range == "Last year":
-        this_year = dt.date.today().replace(day=1, month=1)
-        end_date = this_year - dt.timedelta(days=1) # one day prior to Jan 1
-        start_date = end_date.replace(day=1, month=1)
+        start_date = today.floor("year").shift(years=-1).date()
+        end_date = today.floor("year").shift(days=-1).date() # one day prior to Jan 1
+    elif date_range == "This quarter":
+        start_date = today.floor("quarter").date()
+        end_date = today.date()
+    elif date_range == "Last quarter":
+        start_date = today.floor("quarter").shift(quarters=-1).date()
+        end_date = today.floor("quarter").shift(days=-1).date() # one day prior to first day of this quarter
     elif date_range == "Specific dates":
-        dates = config_ct.date_input("Select dates:", value=(data_start_date, dt.date.today()))
+        dates = config_ct.date_input("Select dates:", value=(data_start_date, today.date()))
         if len(dates) > 1:
             # Wait until both start and end dates selected to set date range
             start_date, end_date = dates
@@ -51,12 +61,13 @@ def render_sidebar(data_start_date: dt.date, data_end_date: dt.date) -> tuple:
         start_date, end_date = None, None
 
     # Option to compare to another date range
-    config_ct.subheader("Compare To:")
-    compare_ct = config_ct.expander("Show options")
-    compare = compare_ct.checkbox("Enable comparison")
-    compare_date_range = compare_ct.selectbox("Date range:", ["Same days last month", "Same days last year", "This month", "Last month", "2 months ago", "This year", "Last year", "This quarter", "Last quarter", "Specific dates"])
+    compare_ct = config_ct.expander("Comparison Data")
+    compare = compare_ct.checkbox("Show comparison display")
+    compare_date_range = compare_ct.selectbox("Date range:", ["Same days last month", "Same days last year", "Last month", "2 months ago", "Last year", "2 years ago", "Last quarter", "2 quarters ago", "3 quarters ago", "Specific dates"])
     if date_range == "Specific dates":
-        compare_start_date, compare_end_date = compare_ct.date_input("Date range:", key="compare_dates", value=(data_start_date, dt.date.today()))
+        compare_dates = compare_ct.date_input("Date range:", key="compare_dates", value=(data_start_date, today.date()))
+        if len(compare_dates) > 1:
+            compare_start_date, compare_end_date = compare_dates
     if not compare:
         # Do not perform comparison if enable box is unchecked, so clear dates
         compare_start_date, compare_end_date = None, None
