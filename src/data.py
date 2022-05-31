@@ -257,7 +257,7 @@ def _calc_stats(df, partitions):
 
     # Inpatient stats
     stats["inpt_num_pts"] = len(partitions["inpt_encs"].groupby(["date", "mrn"]))
-    stats["inpt_ttl_wrvu"] = partitions["inpt_encs"].wrvu.sum()
+    stats["inpt_ttl_wrvu"] = partitions["inpt_all"].wrvu.sum()
 
     return stats
 
