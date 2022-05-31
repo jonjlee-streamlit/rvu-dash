@@ -72,7 +72,7 @@ def render_dataset(data: data.FilteredRvuData, dataset_ct: st.container):
     display_dfs = {
         'None': None,
         'All Data (including shots, etc)': df,
-        'All Encounters (Inpatient + Outpatient)': partitions['all_encs'],
+        'All Visits (Inpatient + Outpatient)': partitions['all_encs'],
         'Inpatient - All': partitions['inpt_all'],
         'Outpatient - All': partitions['outpt_all'],
         'Outpatient - Visits': partitions['outpt_encs'],
@@ -118,7 +118,7 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         fig.st_summary(cmp_stats, compare.start_date, compare.end_date, colR, columns=False)
 
     # Summary graphs
-    st.markdown('<p style="margin-top:0px; margin-bottom:-15px; text-align:center; color:#A9A9A9">RVU graphs do not include charges posted after specified date range, so totals may not match number above.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="margin-top:0px; margin-bottom:-15px; text-align:center; color:#A9A9A9">RVU graphs do not include charges posted outside of dates, so totals may not match number above.</p>', unsafe_allow_html=True)
     if compare is None:
         enc_ct, rvu_ct = st.columns(2)
         quarter_ct = st.expander("By Quarter")
@@ -174,9 +174,11 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
     # Inpatient Summary
     st.header("Inpatient")
     if compare is None:
-        inpt_enc_ct, inpt_rvu_ct = st.columns(2)
-        fig.st_inpt_vs_outpt_encs_fig(stats, inpt_enc_ct)
-        fig.st_inpt_vs_outpt_rvu_fig(stats, inpt_rvu_ct)
+        inpt_enc_ct = st.empty()
+        colL, colR = st.columns(2)
+        fig.st_inpt_encs_fig(partitions, inpt_enc_ct)
+        fig.st_inpt_vs_outpt_encs_fig(stats, colL)
+        fig.st_inpt_vs_outpt_rvu_fig(stats, colR)
     else:
         colL, colR = st.columns(2)
         fig.st_inpt_vs_outpt_encs_fig(stats, colL)

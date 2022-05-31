@@ -18,21 +18,27 @@ def st_summary(stats, start_date, end_date, ct, columns=True):
 
 def st_enc_by_month_fig(partitions, ct):
     """Bar graph of number of visits"""
-    src = partitions["all_encs"].groupby("month").mrn.count().reset_index()
+    src = partitions["all_encs"].groupby(["month"]).mrn.nunique().reset_index()
     src.columns = ["Month", "Encounters"]
     fig = px.bar(src, title="Encounters", x="Month", y="Encounters", text="Encounters", text_auto="i")
     fig.update_layout(title_x=0.5) # Center title
     fig.update_xaxes(tickformat="%b %Y") # Make x-axis dates show only month and year
     ct.plotly_chart(fig, use_container_width=True)
 
+    # To create stacked bars for inpatient/outpatient, replace src with the following:
+    # src = partitions["all_encs"].groupby(["month", "inpatient"]).mrn.nunique().reset_index()
+    # src.columns = ["Month", "Setting", "Encounters"]
+    # src["Setting"] = src["Setting"].apply(lambda x: "Inpatient" if x else "Outpatient")
+    # fig = px.bar(src, title="Encounters", x="Month", y="Encounters", color="Setting", text="Encounters", text_auto="i", hover_data={"Setting": False})
+
 def st_enc_by_quarter_fig(partitions, ct):
-    src = partitions["all_encs"].groupby("quarter").mrn.count().reset_index()
+    src = partitions["all_encs"].groupby(["quarter"]).mrn.nunique().reset_index()
     src.columns = ["Quarter", "Encounters"]
     fig = px.bar(src, title="Encounters by Quarter", x="Quarter", y="Encounters", text="Encounters", text_auto="i")
     ct.plotly_chart(fig, use_container_width=True)
 
 def st_enc_by_day_fig(partitions, ct):
-    src = partitions["all_encs"].groupby("date").mrn.count().reset_index()
+    src = partitions["all_encs"].groupby(["date"]).mrn.nunique().reset_index()
     src.columns = ["Date", "Encounters"]
     fig = px.bar(src, title="Encounters by Day", x="Date", y="Encounters", text="Encounters", text_auto="i")
     fig.update_xaxes(tickformat="%a %m-%d-%y") # Make x-axis dates include weekday and show only date, even when zoomed in (ie. no time)
@@ -97,12 +103,12 @@ def st_sick_visits_fig(stats, ct):
 def st_sick_vs_well_fig(stats, ct):
     """Sick vs well pie chart"""
     src = pd.DataFrame({
-        "Type": ["Sick ({n} pts)".format(n=stats["ttl_sick"]), 
-                "Well ({n} pts)".format(n=stats["ttl_wcc"])],
-        "n": [stats["ttl_sick"], 
-            stats["ttl_wcc"]]
+        "Type": ["Sick/Procedure ({n} pts)".format(n=stats["sick_num_pts"]), 
+                "Well ({n} pts)".format(n=stats["wcc_num_pts"])],
+        "n": [stats["sick_num_pts"], 
+            stats["wcc_num_pts"]]
     })
-    fig = px.pie(src, title="Number of Sick vs Well ", values="n", names="Type", hole=.5)
+    fig = px.pie(src, title="Charge Types", values="n", names="Type", hole=.5)
     fig.update_traces(sort=False) 
     ct.plotly_chart(fig, use_container_width=True)
 
@@ -138,6 +144,12 @@ def st_non_encs_fig(partitions, ct):
     fig.update_layout(hovermode="x")
     ct.plotly_chart(fig, use_container_width=True)
 
+def st_inpt_encs_fig(partitions, ct):
+    src = partitions["inpt_all"].groupby("date").mrn.nunique().reset_index()
+    src.columns = ["Date", "Encounters"]
+    fig = px.bar(src, title="Encounters by Day", x="Date", y="Encounters", text="Encounters", text_auto="i")
+    fig.update_xaxes(tickformat="%a %m-%d-%y") # Make x-axis dates include weekday and show only date, even when zoomed in (ie. no time)
+    ct.plotly_chart(fig, use_container_width=True)    
 
 def st_inpt_vs_outpt_encs_fig(stats, ct):
     src = pd.DataFrame({

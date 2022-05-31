@@ -221,8 +221,8 @@ def _calc_stats(df, partitions):
     stats["ttl_lvl5"] = len(df[cptstr.match("992[01]5")])
     stats["ttl_tcm"] = len(df[cptstr.match("9949[56]")])
     stats["ttl_procedures"] = len(df[cptstr.match(RE_PROCEDURE_CODES)])
-    stats["ttl_sick"] = len(partitions["sick_encs"])
-    stats["ttl_sick_wrvu"] = partitions["sick_encs"].wrvu.sum()
+    stats["sick_num_pts"] = len(partitions["sick_encs"].groupby(["date", "mrn"]))
+    stats["sick_ttl_wrvu"] = partitions["sick_encs"].wrvu.sum()
 
     # Counts of WCCs
     stats["ttl_wccinfant"] = len(df[cptstr.match("993[89]1")])
@@ -230,7 +230,7 @@ def _calc_stats(df, partitions):
     stats["ttl_wcc5to11"] = len(df[cptstr.match("993[89]3")])
     stats["ttl_wcc12to17"] = len(df[cptstr.match("993[89]4")])
     stats["ttl_wccadult"] = len(df[cptstr.match("993[89]5")])
-    stats["ttl_wcc"] = (
+    stats["wcc_num_pts"] = (
         stats["ttl_wccinfant"]
         + stats["ttl_wcc1to4"]
         + stats["ttl_wcc5to11"]
