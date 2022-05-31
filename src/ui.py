@@ -4,6 +4,7 @@ import plotly.express as px
 import datetime as dt
 import arrow
 from datetime import date
+from st_aggrid import AgGrid, GridOptionsBuilder
 from . import auth, data, fig, dates
 
 def render_upload(cur_files: list = None):
@@ -31,8 +32,8 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
     )
 
     # Preset date filters
-    date_range = config_ct.selectbox("Dates:", ["Specific dates below", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month"])
-    if date_range == "Specific dates below":
+    date_range = config_ct.selectbox("Dates:", ["Specific dates", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month"], index=1)
+    if date_range == "Specific dates":
         specific_dates = config_ct.date_input("Date range:", value=(data_start_date, date.today()))
         if len(specific_dates) > 1:
             # Wait until both start and end dates selected to set date range
@@ -42,9 +43,9 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
 
     # Option to compare to another date range
     compare_ct = config_ct.expander("Comparison Data")
-    compare = compare_ct.checkbox("Show comparison display")
-    compare_date_range = compare_ct.selectbox("Dates:", ["Specific dates below", "Same days 1 month ago", "Same days 1 year ago", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month"])
-    if compare_date_range == "Specific dates below":
+    compare = compare_ct.checkbox("Enable comparison display")
+    compare_date_range = compare_ct.selectbox("Dates:", ["Specific dates", "Same days 1 month ago", "Same days 1 year ago", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month"], index=2)
+    if compare_date_range == "Specific dates":
         compare_dates = compare_ct.date_input("Date range:", key="compare_dates", value=(data_start_date, date.today()))
         if len(compare_dates) > 1:
             compare_start_date, compare_end_date = compare_dates
@@ -62,6 +63,40 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
 
     return (provider, start_date, end_date, compare_start_date, compare_end_date)
 
+def render_dataset(data: data.FilteredRvuData, dataset_ct: st.container):
+    """Show the named source dataset in the provided container"""
+    if data is None:
+        return
+
+    df, partitions = data.df, data.partitions
+    display_dfs = {
+        'None': None,
+        'All Data (including shots, etc)': df,
+        'All Encounters (Inpatient + Outpatient)': partitions['all_encs'],
+        'Inpatient - All': partitions['inpt_all'],
+        'Outpatient - All': partitions['outpt_all'],
+        'Outpatient - Visits': partitions['outpt_encs'],
+        'Outpatient - Well Only': partitions['wcc_encs'],
+        'Outpatient - Sick Only': partitions['sick_encs'],
+        'Outpatient - Other Charges': partitions['outpt_not_encs'],
+    }
+    dataset_name = st.selectbox("Show Data Set:", display_dfs.keys())
+    display_df = display_dfs.get(dataset_name)
+
+    # Filters for other partitions not used elsewhere
+    if dataset_name == 'Clinic - 99211 and 99212':
+        display_df = df[df.cpt.str.match('992[01][12]')]
+    elif dataset_name == 'Clinic - 99213':
+        display_df = df[df.cpt.str.match('992[01]3')]
+    elif dataset_name == 'Clinic - 99214 and above':
+        display_df = df[df.cpt.str.match('992[01][45]|9949[56]')]
+
+    if not display_df is None:
+        with st.spinner():
+            gb = GridOptionsBuilder.from_dataframe(display_df)
+            gb.configure_columns(["posted_date", "date"], type=["customDateTimeFormat"], custom_format_string="M/d/yyyy")
+            gb.configure_column("wrvu", type=["customNumericFormat"], precision=2)
+            AgGrid(display_df, gridOptions=gb.build())
 
 def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> None:
     """Builds the main panel using given data of type data.FilteredRvuData"""
@@ -75,23 +110,27 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
     # Summary stats including overall # patients and wRVUs
     st.header("Summary")
     if compare is None:
-        dates_ct = st.empty()
-        ct1, ct2, ct3 = st.columns(3)
-        fig.st_summary(stats, data.start_date, data.end_date, dates_ct, ct1, ct2, ct3)
+        fig.st_summary(stats, data.start_date, data.end_date, st, columns=True)
     else:
         # Write metrics in side-by-side vertical columns
         colL, colR = st.columns(2)
-        fig.st_summary(stats, data.start_date, data.end_date, colL, colL, colL, colL)
-        fig.st_summary(cmp_stats, compare.start_date, compare.end_date, colR, colR, colR, colR)
+        fig.st_summary(stats, data.start_date, data.end_date, colL, columns=False)
+        fig.st_summary(cmp_stats, compare.start_date, compare.end_date, colR, columns=False)
 
     # Summary graphs
+    st.markdown('<p style="margin-top:0px; margin-bottom:-15px; text-align:center; color:#A9A9A9">RVU graphs do not include charges posted after specified date range, so totals may not match number above.</p>', unsafe_allow_html=True)
     if compare is None:
         enc_ct, rvu_ct = st.columns(2)
         quarter_ct = st.expander("By Quarter")
         quarter_enc_ct, quarter_rvu_ct = quarter_ct.columns(2)
         daily_ct = st.expander("By Day")
         daily_enc_ct, daily_rvu_ct = daily_ct.columns(2)
-        fig.st_summary_figs(df, partitions, enc_ct, rvu_ct, quarter_enc_ct, quarter_rvu_ct, daily_enc_ct, daily_rvu_ct)
+        fig.st_enc_by_month_fig(partitions, enc_ct)
+        fig.st_rvu_by_month_fig(df, data.end_date, rvu_ct)
+        fig.st_enc_by_quarter_fig(partitions, quarter_enc_ct)
+        fig.st_rvu_by_quarter_fig(df, data.end_date, quarter_rvu_ct)
+        fig.st_enc_by_day_fig(partitions, daily_enc_ct)
+        fig.st_rvu_by_day_fig(df, daily_rvu_ct)
     else:
         main_ct = st.container()
         main_colL, main_colR = main_ct.columns(2)
@@ -99,21 +138,38 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         quarter_colL, quarter_colR = quarter_ct.columns(2)
         daily_ct = st.expander("By Day")
         daily_colL, daily_colR = daily_ct.columns(2)
-        fig.st_summary_figs(df, partitions, main_colL, main_colL, quarter_colL, quarter_colL, daily_colL, daily_colL)
-        fig.st_summary_figs(cmp_df, cmp_partitions, main_colR, main_colR, quarter_colR, quarter_colR, daily_colR, daily_colR)
+        fig.st_enc_by_month_fig(partitions, main_colL)
+        fig.st_rvu_by_month_fig(df, data.end_date, main_colL)
+        fig.st_enc_by_quarter_fig(partitions, quarter_colL)
+        fig.st_rvu_by_quarter_fig(df, data.end_date, quarter_colL)
+        fig.st_enc_by_day_fig(partitions, daily_colL)
+        fig.st_rvu_by_day_fig(df, daily_colL)
+
+        fig.st_enc_by_month_fig(cmp_partitions, main_colR)
+        fig.st_rvu_by_month_fig(cmp_df, compare.end_date, main_colR)
+        fig.st_enc_by_quarter_fig(cmp_partitions, quarter_colR)
+        fig.st_rvu_by_quarter_fig(cmp_df, compare.end_date, quarter_colR)
+        fig.st_enc_by_day_fig(cmp_partitions, daily_colR)
+        fig.st_rvu_by_day_fig(cmp_df, daily_colR)
 
     # Outpatient Summary
     st.header("Outpatient")
     if compare is None:
-        sick_visits_ct, sick_vs_well_ct = st.columns(2)
-        fig.st_sick_visits_fig(stats, sick_visits_ct)
-        fig.st_sick_vs_well_fig(stats, sick_vs_well_ct)
+        colL, colR = st.columns(2)
+        fig.st_sick_visits_fig(stats, colL)
+        fig.st_wcc_visits_fig(stats, colR)
+        fig.st_sick_vs_well_fig(stats, colL)
+        fig.st_non_encs_fig(partitions, colR)
     else:
         colL, colR = st.columns(2)
         fig.st_sick_visits_fig(stats, colL)
+        fig.st_wcc_visits_fig(stats, colL)
         fig.st_sick_vs_well_fig(stats, colL)
+        fig.st_non_encs_fig(partitions, colL)
         fig.st_sick_visits_fig(cmp_stats, colR)
+        fig.st_wcc_visits_fig(cmp_stats, colR)
         fig.st_sick_vs_well_fig(cmp_stats, colR)
+        fig.st_non_encs_fig(cmp_partitions, colR)
 
     # Inpatient Summary
     st.header("Inpatient")
@@ -127,3 +183,8 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         fig.st_inpt_vs_outpt_rvu_fig(stats, colL)
         fig.st_inpt_vs_outpt_encs_fig(cmp_stats, colR)
         fig.st_inpt_vs_outpt_rvu_fig(cmp_stats, colR)
+
+    # Source data
+    st.header("Source Data")
+    dataset_ct = st.empty()
+    render_dataset(data, dataset_ct)
