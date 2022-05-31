@@ -78,9 +78,10 @@ def st_rvu_by_quarter_fig(df, end_date, ct):
 
 def st_rvu_by_day_fig(df, ct):
     src = df.groupby("date").wrvu.sum().reset_index()
-    src.columns = ["Day", "wRVUs"]
-    fig = px.bar(src, title="wRVUs by Day", x="Day", y="wRVUs", text="wRVUs", text_auto=".1f", hover_data={"wRVUs": ":.1f"}).update_traces(marker_color="#00ac75")
+    src.columns = ["Date", "wRVUs"]
+    fig = px.bar(src, title="wRVUs by Day", x="Date", y="wRVUs", text="wRVUs", text_auto=".1f", hover_data={"wRVUs": ":.1f"}).update_traces(marker_color="#00ac75")
     fig.update_xaxes(tickformat="%a %m-%d-%y") # Make x-axis dates include weekday and show only date, even when zoomed in (ie. no time)
+    fig.update_layout(hovermode="x")
     ct.plotly_chart(fig, use_container_width=True)    
 
 def st_sick_visits_fig(stats, ct):
@@ -152,6 +153,7 @@ def st_inpt_encs_fig(partitions, ct):
     src.columns = ["Date", "Encounters"]
     fig = px.bar(src, title="Encounters by Day", x="Date", y="Encounters", text="Encounters", text_auto="i")
     fig.update_xaxes(tickformat="%a %m-%d-%y") # Make x-axis dates include weekday and show only date, even when zoomed in (ie. no time)
+    fig.update_layout(hovermode="x")
     ct.plotly_chart(fig, use_container_width=True)    
 
 def st_inpt_vs_outpt_encs_fig(stats, ct):

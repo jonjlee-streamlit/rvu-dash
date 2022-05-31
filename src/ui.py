@@ -132,6 +132,7 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         fig.st_rvu_by_quarter_fig(df, data.end_date, quarter_rvu_ct)
         fig.st_enc_by_day_fig(partitions, daily_enc_ct)
         fig.st_rvu_by_day_fig(df, daily_rvu_ct)
+        daily_ct.markdown('<p style="margin-top:-15px; margin-bottom:10px; text-align:center; color:#A9A9A9">To zoom in, click on a graph and drag horizontally</p>', unsafe_allow_html=True)
     else:
         main_ct = st.container()
         main_colL, main_colR = main_ct.columns(2)
@@ -152,6 +153,8 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> No
         fig.st_rvu_by_quarter_fig(cmp_df, compare.end_date, quarter_colR)
         fig.st_enc_by_day_fig(cmp_partitions, daily_colR)
         fig.st_rvu_by_day_fig(cmp_df, daily_colR)
+
+        daily_ct.markdown('<p style="margin-top:-15px; margin-bottom:10px; text-align:center; color:#A9A9A9">To zoom in, click on a graph and drag horizontally</p>', unsafe_allow_html=True)
 
     # Outpatient Summary
     st.header("Outpatient")
