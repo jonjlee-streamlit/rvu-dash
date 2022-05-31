@@ -45,6 +45,7 @@ def st_enc_by_day_fig(partitions, ct):
     src.columns = ["Date", "Encounters"]
     fig = px.bar(src, title="Encounters by Day", x="Date", y="Encounters", text="Encounters", text_auto="i")
     fig.update_xaxes(tickformat="%a %m-%d-%y") # Make x-axis dates include weekday and show only date, even when zoomed in (ie. no time)
+    fig.update_layout(hovermode="x")
     ct.plotly_chart(fig, use_container_width=True)    
 
 def st_rvu_by_month_fig(df, end_date, ct):
