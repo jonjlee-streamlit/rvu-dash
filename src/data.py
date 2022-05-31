@@ -138,12 +138,6 @@ def _split_by(df: pd.DataFrame, column: str) -> dict[str, pd.DataFrame]:
     Returns a dict indexed by each unique value in the column.
     Note, the returned dataframes are each views on a copy of the original dataframe.
     """
-    # # Return of sorted copy of dataframe
-    # df = df.sort_values(by=column, axis=0)
-
-    # # Set the index to be the column, and don't delete the column
-    # df.set_index(keys=[column], drop=False, inplace=True)
-
     # Create views for each unique column value
     uniq = df[column].unique().tolist()
     views = {}

@@ -97,6 +97,7 @@ def render_dataset(data: data.FilteredRvuData, dataset_ct: st.container):
             gb.configure_columns(["posted_date", "date"], type=["customDateTimeFormat"], custom_format_string="M/d/yyyy")
             gb.configure_column("wrvu", type=["customNumericFormat"], precision=2)
             AgGrid(display_df, gridOptions=gb.build())
+            st.caption(f"{len(display_df)} rows")
 
 def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData) -> None:
     """Builds the main panel using given data of type data.FilteredRvuData"""

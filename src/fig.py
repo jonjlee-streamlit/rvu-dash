@@ -18,7 +18,8 @@ def st_summary(stats, start_date, end_date, ct, columns=True):
 
 def st_enc_by_month_fig(partitions, ct):
     """Bar graph of number of visits"""
-    src = partitions["all_encs"].groupby(["month"]).mrn.nunique().reset_index()
+    src = partitions["all_encs"].groupby(["date", "month", "mrn"]).size().reset_index().groupby("month").count().reset_index()
+    src = src[["month", "mrn"]]
     src.columns = ["Month", "Encounters"]
     fig = px.bar(src, title="Encounters", x="Month", y="Encounters", text="Encounters", text_auto="i")
     fig.update_layout(title_x=0.5) # Center title
@@ -32,13 +33,15 @@ def st_enc_by_month_fig(partitions, ct):
     # fig = px.bar(src, title="Encounters", x="Month", y="Encounters", color="Setting", text="Encounters", text_auto="i", hover_data={"Setting": False})
 
 def st_enc_by_quarter_fig(partitions, ct):
-    src = partitions["all_encs"].groupby(["quarter"]).mrn.nunique().reset_index()
+    src = partitions["all_encs"].groupby(["date", "quarter", "mrn"]).size().reset_index().groupby("quarter").count().reset_index()
+    src = src[["quarter", "mrn"]]
     src.columns = ["Quarter", "Encounters"]
     fig = px.bar(src, title="Encounters by Quarter", x="Quarter", y="Encounters", text="Encounters", text_auto="i")
     ct.plotly_chart(fig, use_container_width=True)
 
 def st_enc_by_day_fig(partitions, ct):
-    src = partitions["all_encs"].groupby(["date"]).mrn.nunique().reset_index()
+    src = partitions["all_encs"].groupby(["date", "mrn"]).size().reset_index().groupby("date").count().reset_index()
+    src = src[["date", "mrn"]]
     src.columns = ["Date", "Encounters"]
     fig = px.bar(src, title="Encounters by Day", x="Date", y="Encounters", text="Encounters", text_auto="i")
     fig.update_xaxes(tickformat="%a %m-%d-%y") # Make x-axis dates include weekday and show only date, even when zoomed in (ie. no time)
