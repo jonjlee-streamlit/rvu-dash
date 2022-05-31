@@ -10,6 +10,7 @@ plotly = "*"
 protobuf = "==3.20.1"
 arrow = "*"
 typing-extensions = "*"
+streamlit-aggrid = "*"
 
 [dev-packages]
 black = "*"
