@@ -32,6 +32,7 @@ def run():
         end_date,
         compare_start_date,
         compare_end_date,
+        visit_log_file
     ) = ui.render_sidebar(rvudata.start_date, rvudata.end_date)
 
     # Filter data and calculate stats
@@ -42,8 +43,13 @@ def run():
         else None
     )
 
+    # Validate visit log
+    visit_data = None
+    if visit_log_file:
+        visit_data = data.validate_visits(filtered, visit_log_file.getvalue())
+
     # Show main display
-    ui.render_main(filtered, compare)
+    ui.render_main(filtered, compare, visit_data)
 
 st.set_page_config(layout="wide")
 run()

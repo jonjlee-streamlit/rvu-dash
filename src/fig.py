@@ -1,6 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from st_aggrid import AgGrid, GridOptionsBuilder
+
+def st_aggrid(df):
+    gb = GridOptionsBuilder.from_dataframe(df)
+    gb.configure_columns(["posted_date", "date"], type=["customDateTimeFormat"], custom_format_string="M/d/yyyy")
+    gb.configure_column("wrvu", type=["customNumericFormat"], precision=2)
+    AgGrid(df, gridOptions=gb.build())
+    st.caption(f"{len(df)} rows")
 
 def st_summary(stats, start_date, end_date, ct, columns=True):
     """Render summary stats"""

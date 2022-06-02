@@ -75,6 +75,18 @@ class FilteredRvuData:
     # Precalculated stats, e.g. # encounters, total RVUs, etc
     stats: dict[str, typing.Any]
 
+@dataclass
+class VisitLogData:
+    """Validation data comparing a manually caputred log of visits against RVU data"""
+    # Visit log as CSV
+    visit_log_df: pd.DataFrame
+    # RVU data for a specific provider and dates, taken from FilteredRvuData
+    df: pd.DataFrame
+    # Visits appearing the same in both log and RVU data
+    validated: pd.DataFrame
+    # Visits present in log but not RVU data or billed using a different code
+    diff: pd.DataFrame
+
 
 def _fetch_file_or_url(filename_or_url):
     """Fetch source data as Excel file"""
@@ -317,4 +329,36 @@ def process(
         df=df,
         partitions=partitions,
         stats=stats,
+    )
+
+def validate_visits(rvudata: FilteredRvuData, visit_log_bytes: typing.ByteString) -> VisitLogData:
+    """Validate the entries in a visit log against the charges in the rvu data"""
+    if rvudata is None or visit_log_bytes is None:
+        return None
+
+    # Read visit log as CSV
+    visit_log_df = pd.read_csv(io.BytesIO(visit_log_bytes), names=["date", "mrn", "docid", "cpt"], dtype={"cpt": str})
+    visit_log_df.date = pd.to_datetime(visit_log_df.date, errors="coerce")
+    # Drop duplicates by docid
+    visit_log_df = visit_log_df.groupby("docid").last()
+
+    # Source RVU data - limited to selected provider and dates
+    df = rvudata.df
+
+    # Find rows in visit log that have the same date, MRN, and code in the RVU data
+    joined = pd.merge(visit_log_df[["date","mrn","cpt"]], df, on=["date","mrn","cpt"], how="left", suffixes=["_log","_actual"])
+    
+    # First keep rows that have a matching RVU data entry 
+    validated = joined[~joined.posted_date.isna()]
+    
+    # Process rows that don't have matching data
+    diff = joined[joined.posted_date.isna()]
+    diff = diff[["date", "mrn", "cpt"]]
+    diff = diff.drop_duplicates()
+
+    return VisitLogData(
+        visit_log_df=visit_log_df,
+        df=df,
+        validated=validated,
+        diff=diff
     )
