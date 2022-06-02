@@ -146,7 +146,7 @@ def st_wcc_visits_fig(stats, ct):
 def st_non_encs_fig(partitions, ct):
     """Bar chart of non-encounter charges (e.g. shots, fluoride, etc), sorted by most total wRVUs"""
     src = partitions["outpt_non_enc_wrvus"]
-    fig = px.bar(src, title="Other CPT codes", x="CPT", y="wRVUs", custom_data=["Description", "n"])
+    fig = px.bar(src, title="wRVU From Other Codes", x="CPT", y="wRVUs", custom_data=["Description", "n"])
     fig.update_traces(
         hovertemplate="<br>".join([
             "%{x} (%{customdata[0]})",
@@ -158,9 +158,11 @@ def st_non_encs_fig(partitions, ct):
     ct.plotly_chart(fig, use_container_width=True)
 
 def st_inpt_encs_fig(partitions, ct):
-    src = partitions["inpt_all"].groupby("date").mrn.nunique().reset_index()
+    groupby = partitions["inpt_all"].groupby("date") 
+    ndays = groupby.ngroups 
+    src = groupby.mrn.nunique().reset_index()
     src.columns = ["Date", "Encounters"]
-    fig = px.bar(src, title="Encounters by Day", x="Date", y="Encounters", text="Encounters", text_auto="i")
+    fig = px.bar(src, title=f"Encounters by Day ({ndays} active days)", x="Date", y="Encounters", text="Encounters", text_auto="i")
     fig.update_xaxes(tickformat="%a %m-%d-%y") # Make x-axis dates include weekday and show only date, even when zoomed in (ie. no time)
     fig.update_layout(hovermode="x")
     ct.plotly_chart(fig, use_container_width=True)    
