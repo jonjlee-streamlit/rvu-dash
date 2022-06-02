@@ -31,23 +31,27 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
     )
 
     # Preset date filters
-    date_range = config_ct.selectbox("Dates:", ["Specific dates", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month", "Last 12 months", "Last 4 completed quarters"], index=1)
+    date_range = config_ct.selectbox("Dates:", ["Specific dates", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month", "Last 12 months", "Last 4 completed quarters", "All dates"], index=1)
     if date_range == "Specific dates":
         specific_dates = config_ct.date_input("Date range:", value=(data_start_date, date.today()))
         if len(specific_dates) > 1:
             # Wait until both start and end dates selected to set date range
             start_date, end_date = specific_dates
+    elif date_range == "All dates":
+        start_date, end_date = data_start_date, data_end_date
     else:
         start_date, end_date = dates.get_dates(date_range)
 
     # Option to compare to another date range
     compare_ct = config_ct.expander("Comparison Data")
     compare = compare_ct.checkbox("Enable comparison display")
-    compare_date_range = compare_ct.selectbox("Dates:", ["Specific dates", "Same days 1 month ago", "Same days 1 year ago", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month", "Last 12 months", "Last 4 completed quarters"], index=2)
+    compare_date_range = compare_ct.selectbox("Dates:", ["Specific dates", "Same days 1 month ago", "Same days 1 year ago", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month", "Last 12 months", "Last 4 completed quarters", "All dates"], index=2)
     if compare_date_range == "Specific dates":
         compare_dates = compare_ct.date_input("Date range:", key="compare_dates", value=(data_start_date, date.today()))
         if len(compare_dates) > 1:
             compare_start_date, compare_end_date = compare_dates
+    elif compare_date_range == "All dates":
+        compare_start_date, compare_end_date = data_start_date, data_end_date
     elif compare_date_range == "Same days 1 month ago" and start_date is not None:
         compare_start_date = arrow.get(start_date).shift(months=-1).date()
         compare_end_date = arrow.get(end_date).shift(months=-1).date()
@@ -64,8 +68,8 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
     visitlog = None
     qps = st.experimental_get_query_params()
     if qps.get("visitlog") == ["1"]:
-        visitlog_ct = config_ct.expander("Validate Visits Log")
-        visitlog = visitlog_ct.file_uploader("Upload a log file")
+        visitlog_ct = config_ct.expander("Visits Log")
+        visitlog = visitlog_ct.file_uploader("Upload a log file to validate")
 
     return (provider, start_date, end_date, compare_start_date, compare_end_date, visitlog)
 

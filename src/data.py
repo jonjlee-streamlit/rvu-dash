@@ -343,7 +343,8 @@ def validate_visits(rvudata: FilteredRvuData, visit_log_bytes: typing.ByteString
     visit_log_df = visit_log_df.groupby("docid").last()
 
     # Source RVU data - limited to selected provider and dates
-    df = rvudata.df
+    name = ALIAS_TO_NAME.get(rvudata.provider)
+    df = rvudata.all.by_provider.get(name)
 
     # Find rows in visit log that have the same date, MRN, and code in the RVU data
     joined = pd.merge(visit_log_df[["date","mrn","cpt"]], df, on=["date","mrn","cpt"], how="left", suffixes=["_log","_actual"])
