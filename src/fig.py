@@ -5,6 +5,10 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 
 def st_aggrid(df):
     gb = GridOptionsBuilder.from_dataframe(df)
+    # Allow cell text selection / copy
+    gb.configure_grid_options(enableCellTextSelection=True)
+    gb.configure_grid_options(ensureDomOrder=True)
+    # Customize date column Truet
     gb.configure_columns(["posted_date", "date"], type=["customDateTimeFormat"], custom_format_string="M/d/yyyy")
     gb.configure_column("wrvu", type=["customNumericFormat"], precision=2)
     AgGrid(df, gridOptions=gb.build())

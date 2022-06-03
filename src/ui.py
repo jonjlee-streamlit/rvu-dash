@@ -71,6 +71,11 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
         visitlog_ct = config_ct.expander("Visits Log")
         visitlog = visitlog_ct.file_uploader("Upload a log file to validate")
 
+    # Table of contents
+    if (provider != "Select a Provider") and (visitlog is None):
+        config_ct.header("Sections")
+        config_ct.markdown("* [Summary](#summary)\n* [Outpatient](#outpatient)\n* [Inpatient](#inpatient)\n* [Source Data](#source-data)", unsafe_allow_html=True)
+
     return (provider, start_date, end_date, compare_start_date, compare_end_date, visitlog)
 
 def render_validate_visit(visit_data: data.VisitLogData):
