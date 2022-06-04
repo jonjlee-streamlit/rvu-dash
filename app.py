@@ -51,5 +51,5 @@ def run():
     # Show main display
     ui.render_main(filtered, compare, visit_data)
 
-st.set_page_config(layout="wide")
+st.set_page_config(page_title='RVU Dashboard', layout="wide")
 run()
