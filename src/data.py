@@ -204,6 +204,14 @@ def _calc_partitions(df):
 
     df_all_encs = pd.concat([df_outpt_encs, df_inpt_encs])
     partitions["all_encs"] = df_all_encs
+
+    # Encounters with negative charges
+    #visitids_negative_rvus = df_all_encs[df_all_encs.wrvu <= 0].visitid.unique()
+    #partitions["neg_wrvu_encs"] = df_all_encs[df_all_encs.visitid.isin(visitids_negative_rvus)]
+    ttl_rvu_by_visit = df.groupby("visitid")["wrvu"].sum()
+    visitids_negative_rvus = ttl_rvu_by_visit[ttl_rvu_by_visit<=0].index.unique()
+    partitions["neg_wrvu_encs"] = df[df.visitid.isin(visitids_negative_rvus)]
+
     return partitions
 
 

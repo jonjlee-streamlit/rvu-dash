@@ -113,6 +113,7 @@ def render_dataset(data: data.FilteredRvuData, dataset_ct: st.container):
         'Outpatient - Well Only': partitions['wcc_encs'],
         'Outpatient - Sick Only': partitions['sick_encs'],
         'Outpatient - Other Charges': partitions['outpt_not_encs'],
+        'Visits with negative RVUs': partitions['neg_wrvu_encs'],
     }
     dataset_name = st.selectbox("Show Data Set:", display_dfs.keys())
     display_df = display_dfs.get(dataset_name)
