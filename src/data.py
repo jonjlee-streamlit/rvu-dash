@@ -172,7 +172,9 @@ def _calc_partitions(df):
     partitions["outpt_all"] = df_outpt_all
     partitions["outpt_encs"] = df_outpt_encs
     partitions["outpt_not_encs"] = df_outpt_all.loc[~df_outpt_all.index.isin(df_outpt_encs.index)]
-    partitions["wcc_encs"] = df.loc[df.cpt.apply(lambda cpt: bool(r_wcc.match(cpt)))]
+    partitions["wcc_encs"] = df.loc[
+        (~df.inpatient) & df.cpt.apply(lambda cpt: bool(r_wcc.match(cpt)))
+    ]
     partitions["sick_encs"] = df.loc[
         (~df.inpatient) & df.cpt.apply(lambda cpt: bool(r_sick.match(cpt)))
     ]
@@ -220,13 +222,13 @@ def _calc_stats(df, partitions):
 
     # Count of various outpt codes: 99211-99215, TCM, and procedure codes
     cptstr = df.cpt.str
-    stats["ttl_lvl1"] = len(df[cptstr.match("992[01]1")])
-    stats["ttl_lvl2"] = len(df[cptstr.match("992[01]2")])
-    stats["ttl_lvl3"] = len(df[cptstr.match("992[01]3")])
-    stats["ttl_lvl4"] = len(df[cptstr.match("992[01]4")])
-    stats["ttl_lvl5"] = len(df[cptstr.match("992[01]5")])
-    stats["ttl_tcm"] = len(df[cptstr.match("9949[56]")])
-    stats["ttl_procedures"] = len(df[cptstr.match(RE_PROCEDURE_CODES)])
+    stats["ttl_lvl1"] = df[cptstr.match("992[01]1")].units.sum()
+    stats["ttl_lvl2"] = df[cptstr.match("992[01]2")].units.sum()
+    stats["ttl_lvl3"] = df[cptstr.match("992[01]3")].units.sum()
+    stats["ttl_lvl4"] = df[cptstr.match("992[01]4")].units.sum()
+    stats["ttl_lvl5"] = df[cptstr.match("992[01]5")].units.sum()
+    stats["ttl_tcm"] = df[cptstr.match("9949[56]")].units.sum()
+    stats["ttl_procedures"] = df[cptstr.match(RE_PROCEDURE_CODES)].units.sum()
     stats["sick_num_pts"] = len(partitions["sick_encs"].groupby(["date", "mrn"]))
     stats["sick_ttl_wrvu"] = partitions["sick_encs"].wrvu.sum()
 
@@ -236,19 +238,12 @@ def _calc_stats(df, partitions):
     stats["ttl_wcc5to11"] = len(df[cptstr.match("993[89]3")])
     stats["ttl_wcc12to17"] = len(df[cptstr.match("993[89]4")])
     stats["ttl_wccadult"] = len(df[cptstr.match("993[89]5")])
-    stats["wcc_num_pts"] = (
-        stats["ttl_wccinfant"]
-        + stats["ttl_wcc1to4"]
-        + stats["ttl_wcc5to11"]
-        + stats["ttl_wcc12to17"]
-        + stats["ttl_wccadult"]
-    )
+    stats["wcc_num_pts"] = len(partitions["wcc_encs"].groupby(["date", "mrn"]))
     stats["ttl_wcc_wrvu"] = partitions["wcc_encs"].wrvu.sum()
 
     # Outpatient stats
     stats["outpt_num_days"] = len(partitions["outpt_encs"].date.unique())
     stats["outpt_num_pts"] = len(partitions["outpt_encs"].groupby(["date", "mrn"]))
-    stats["outpt_ttl_encs"] = len(partitions["outpt_encs"])
     stats["outpt_ttl_wrvu"] = partitions["outpt_encs"].wrvu.sum()
     stats["outpt_avg_wrvu_per_pt"] = stats["outpt_ttl_wrvu"] / stats["outpt_num_pts"] if stats["outpt_num_pts"] > 0 else 0
     stats["outpt_num_pts_per_day"] = stats["outpt_num_pts"] / stats["outpt_num_days"] if stats["outpt_num_days"] > 0 else 0
