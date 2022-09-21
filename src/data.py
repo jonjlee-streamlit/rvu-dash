@@ -205,11 +205,13 @@ def _calc_partitions(df):
     df_all_encs = pd.concat([df_outpt_encs, df_inpt_encs])
     partitions["all_encs"] = df_all_encs
 
-    # Encounters with negative charges
+    # Encounters with zero or negative charges, but had at least one charge that was > 0 rvus, so can,
+    # for example, include incorrectly rebilled 99213/99212s, but exclude COVID shot-only visits
     #visitids_negative_rvus = df_all_encs[df_all_encs.wrvu <= 0].visitid.unique()
     #partitions["neg_wrvu_encs"] = df_all_encs[df_all_encs.visitid.isin(visitids_negative_rvus)]
     ttl_rvu_by_visit = df.groupby("visitid")["wrvu"].sum()
-    visitids_negative_rvus = ttl_rvu_by_visit[ttl_rvu_by_visit<=0].index.unique()
+    max_rvu_by_visit = df.groupby("visitid")["wrvu"].max()
+    visitids_negative_rvus = ttl_rvu_by_visit[(ttl_rvu_by_visit<=0) & (max_rvu_by_visit>0)].index.unique()
     partitions["neg_wrvu_encs"] = df[df.visitid.isin(visitids_negative_rvus)]
 
     return partitions

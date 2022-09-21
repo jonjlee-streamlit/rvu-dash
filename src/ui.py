@@ -113,7 +113,7 @@ def render_dataset(data: data.FilteredRvuData, dataset_ct: st.container):
         'Outpatient - Well Only': partitions['wcc_encs'],
         'Outpatient - Sick Only': partitions['sick_encs'],
         'Outpatient - Other Charges': partitions['outpt_not_encs'],
-        'Visits with negative RVUs': partitions['neg_wrvu_encs'],
+        'Visits with no RVUs': partitions['neg_wrvu_encs'],
     }
     dataset_name = st.selectbox("Show Data Set:", display_dfs.keys())
     display_df = display_dfs.get(dataset_name)
@@ -128,6 +128,7 @@ def render_dataset(data: data.FilteredRvuData, dataset_ct: st.container):
 
     if not display_df is None:
         with st.spinner():
+            st.download_button('Download CSV', display_df.to_csv(), file_name=(dataset_name + '.csv'), mime='text/csv')
             fig.st_aggrid(display_df)
 
 def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData, visit_data) -> None:
