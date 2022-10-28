@@ -17,7 +17,7 @@ def authenticate():
         _, ct, _ = st.columns([1, 2, 1])
         ct.title("RVU Dashboard")
         ct.text_input(
-            "Password", type="password", on_change=password_entered, key="password"
+            "Password", type="password", autocomplete="on", on_change=password_entered, key="password"
         )
         return False
     elif not st.session_state["authn"]:
@@ -25,7 +25,7 @@ def authenticate():
         _, ct, _ = st.columns([1, 2, 1])
         ct.title("RVU Dashboard")
         ct.text_input(
-            "Password", type="password", on_change=password_entered, key="password"
+            "Password", type="password", autocomplete="on", on_change=password_entered, key="password"
         )
         ct.error("Invalid password")
         return False
