@@ -18,7 +18,7 @@ def run():
             st.success("Data files updated.")
             st.write("Data files:")
             st.write(data_files.get_local())
-            st.legacy_caching.clear_cache()
+            st.runtime.legacy_caching.clear_cache()
         return st.stop()
 
     # Fetch source data
