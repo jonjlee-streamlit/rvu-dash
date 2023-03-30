@@ -9,6 +9,7 @@ from . import auth, data, fig, dates
 def render_upload(cur_files: list = None):
     """Provide a way to upload updated data file"""
     st.header("Updated data files")
+    st.write("[Go to dashboard >](/?)")
     if cur_files:
         st.write("Current data files:")
         st.write(cur_files)
@@ -31,7 +32,7 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
     )
 
     # Preset date filters
-    date_range = config_ct.selectbox("Dates:", ["Specific dates", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month", "Last 12 months", "Last 4 completed quarters", "All dates"], index=1)
+    date_range = config_ct.selectbox("Dates:", ["Specific dates", "Last 12 months", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month", "Last 4 completed quarters", "All dates"], index=1)
     if date_range == "Specific dates":
         specific_dates = config_ct.date_input("Date range:", value=(data_start_date, date.today()))
         if len(specific_dates) > 1:
@@ -45,7 +46,7 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
     # Option to compare to another date range
     compare_ct = config_ct.expander("Comparison Data")
     compare = compare_ct.checkbox("Enable comparison display")
-    compare_date_range = compare_ct.selectbox("Dates:", ["Specific dates", "Same days 1 month ago", "Same days 1 year ago", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month", "Last 12 months", "Last 4 completed quarters", "All dates"], index=2)
+    compare_date_range = compare_ct.selectbox("Dates:", ["Specific dates", "Same days 1 month ago", "Same days 1 year ago", "Last 12 months", "This year", "Last year", "This quarter", "Last quarter", "This month", "Last month", "Last 4 completed quarters", "All dates"], index=2)
     if compare_date_range == "Specific dates":
         compare_dates = compare_ct.date_input("Date range:", key="compare_dates", value=(data_start_date, date.today()))
         if len(compare_dates) > 1:
