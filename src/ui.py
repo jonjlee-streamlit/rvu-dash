@@ -143,6 +143,11 @@ def render_main(data: data.FilteredRvuData, compare: data.FilteredRvuData, visit
 
     # Is there a visit log to validate, or just standard RVU dashboard mode?
     if visit_data is None:
+        # If no data is available, show message and stop
+        if len(df.index) == 0:
+            st.write("No data for selected time period.")
+            return
+        
         # Summary stats including overall # patients and wRVUs
         st.header("Summary")
         if compare is None:

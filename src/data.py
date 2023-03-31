@@ -267,6 +267,10 @@ def initialize(filename_or_urls: list[str]) -> RvuData:
         if (df_segment is not None):
             df = pd.concat([df, df_segment])
 
+    # Check if for no data available
+    if len(df.index) == 0:
+        return None
+
     # Add calculated columns like month/quarter, medicaid, and inpatient
     df = _calc_columns(df)
     

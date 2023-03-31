@@ -26,6 +26,11 @@ def run():
     # Fetch source data
     with st.spinner("Initializing..."):
         rvudata = data.initialize(data_files.get())
+    
+    # If no data available, display message and stop
+    if rvudata is None:
+        st.write("No data available. Contact administrator for details.")
+        return st.stop()
 
     # Add sidebar widgets and get dashboard configuration
     (
