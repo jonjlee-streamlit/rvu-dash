@@ -295,9 +295,10 @@ def process(
 
     # Filter data by visit date with given start and end dates
     if start_date:
-        df = df[df["date"].dt.date >= start_date]
+        df = df[(df["date"].dt.date >= start_date) | (df["posted_date"].dt.date >= start_date)]
     if end_date:
-        df = df[df["date"].dt.date < (end_date + pd.Timedelta(days=1))]
+        next_day = (end_date + pd.Timedelta(days=1))
+        df = df[(df["date"].dt.date < next_day) | (df["posted_date"].dt.date < next_day)]
 
     # Parition data for viewing and calculate stats
     partitions = _calc_partitions(df)

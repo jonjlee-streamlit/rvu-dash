@@ -28,9 +28,15 @@ def st_summary(stats, start_date, end_date, ct, columns=True):
     ct3.metric("wRVU / encounter", round(stats["wrvu_per_encs"], 2))
     ct4.metric("Last Visit", stats["end_date"].strftime("%m-%d-%y"))
 
-def st_enc_by_month_fig(partitions, ct):
+def st_enc_by_month_fig(partitions, start_date, end_date, ct):
     """Bar graph of number of visits"""
-    src = partitions["all_encs"].groupby(["date", "month", "mrn"]).size().reset_index().groupby("month").count().reset_index()
+    # Data was filtered on visit date or posted date. Since charges may be posted after our specified time period,
+    # remove the ones out of our period to avoid confusion for the user.
+    df = partitions["all_encs"]
+    df = df[df["date"].dt.date >= start_date]
+    df = df[df["date"].dt.date < (end_date + pd.Timedelta(days=1))]
+
+    src = df.groupby(["date", "month", "mrn"]).size().reset_index().groupby("month").count().reset_index()
     src = src[["month", "mrn"]]
     src.columns = ["Month", "Encounters"]
     fig = px.bar(src, title="Encounters", x="Month", y="Encounters", text="Encounters", text_auto="i")
@@ -44,15 +50,25 @@ def st_enc_by_month_fig(partitions, ct):
     # src["Setting"] = src["Setting"].apply(lambda x: "Inpatient" if x else "Outpatient")
     # fig = px.bar(src, title="Encounters", x="Month", y="Encounters", color="Setting", text="Encounters", text_auto="i", hover_data={"Setting": False})
 
-def st_enc_by_quarter_fig(partitions, ct):
-    src = partitions["all_encs"].groupby(["date", "quarter", "mrn"]).size().reset_index().groupby("quarter").count().reset_index()
+def st_enc_by_quarter_fig(partitions, start_date, end_date, ct):
+    # Filter out encounters outside of time period (see comment in st_enc_by_month_fig())
+    df = partitions["all_encs"]
+    df = df[df["date"].dt.date >= start_date]
+    df = df[df["date"].dt.date < (end_date + pd.Timedelta(days=1))]
+
+    src = df.groupby(["date", "quarter", "mrn"]).size().reset_index().groupby("quarter").count().reset_index()
     src = src[["quarter", "mrn"]]
     src.columns = ["Quarter", "Encounters"]
     fig = px.bar(src, title="Encounters by Quarter", x="Quarter", y="Encounters", text="Encounters", text_auto="i")
     ct.plotly_chart(fig, use_container_width=True)
 
-def st_enc_by_day_fig(partitions, ct):
-    src = partitions["all_encs"].groupby(["date", "mrn"]).size().reset_index().groupby("date").count().reset_index()
+def st_enc_by_day_fig(partitions, start_date, end_date, ct):
+    # Filter out encounters outside of time period (see comment in st_enc_by_month_fig())
+    df = partitions["all_encs"]
+    df = df[df["date"].dt.date >= start_date]
+    df = df[df["date"].dt.date < (end_date + pd.Timedelta(days=1))]
+
+    src = df.groupby(["date", "mrn"]).size().reset_index().groupby("date").count().reset_index()
     src = src[["date", "mrn"]]
     src.columns = ["Date", "Encounters"]
     fig = px.bar(src, title="Encounters by Day", x="Date", y="Encounters", text="Encounters", text_auto="i")
@@ -67,7 +83,7 @@ def st_rvu_by_month_fig(df, end_date, ct):
     However, for wRVU/day, we showing it with the actual visit date, which is more helpful for understanding
     actual production.
     """
-    # Data was filtered on visit date, not posted date. Since charges may be posted after our specified time period,
+    # Data was filtered on visit date OR posted date. Since charges may be posted after our specified time period,
     # remove the ones out of our period to avoid confusion for the user.
     df = df[df["posted_date"].dt.date < (end_date + pd.Timedelta(days=1))]
 
@@ -89,7 +105,11 @@ def st_rvu_by_quarter_fig(df, end_date, ct):
     fig = px.bar(src, title="wRVUs by Quarter", x="Quarter", y="wRVUs", text="wRVUs", text_auto=".1f", hover_data={"wRVUs": ":.1f"}).update_traces(marker_color="#00ac75")
     ct.plotly_chart(fig, use_container_width=True)    
 
-def st_rvu_by_day_fig(df, ct):
+def st_rvu_by_day_fig(df, start_date, end_date, ct):
+    # Filter out posted charges outside of the filtered time period (see comment in st_rvu_by_month_fig())
+    df = df[df["date"].dt.date >= start_date]
+    df = df[df["date"].dt.date < (end_date + pd.Timedelta(days=1))]
+
     src = df.groupby("date").wrvu.sum().reset_index()
     src.columns = ["Date", "wRVUs"]
     fig = px.bar(src, title="wRVUs by Day", x="Date", y="wRVUs", text="wRVUs", text_auto=".1f", hover_data={"wRVUs": ":.1f"}).update_traces(marker_color="#00ac75")
