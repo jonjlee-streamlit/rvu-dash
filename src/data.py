@@ -11,12 +11,12 @@ from dataclasses import dataclass
 from pprint import pformat
 
 # Mapping from provider's short name to key in source data
-ALIAS_TO_NAME = {
-    "Lee": "Lee , Jonathan MD",
-    "Mike": "Frostad, Michael J. MD",
-    "Gordon": "Gordon, Methuel A. MD",
-    "Katie": "Hryniewicz, Kathryn N. MD",
-    "Shields": "Shields, Maricarmen S. MD",
+ALIAS_TO_NAMES = {
+    "Lee": ["Lee , Jonathan MD", "LEE, JONATHAN"],
+    "Mike": ["Frostad, Michael J. MD", "FROSTAD, MICHAEL"],
+    "Gordon": ["Gordon, Methuel A. MD", "GORDON, METHUEL"],
+    "Katie": ["Hryniewicz, Kathryn N. MD", "HRYNIEWICZ, KATHRYN"],
+    "Shields": ["Shields, Maricarmen S. MD", "SHIELDS, MARICARMEN"],
 }
 # Specific location strings that indicate an inpatient charge
 INPT_LOCATIONS = ["Pullman Regional Hospital IP", "Pullman Regional Hospital OP"]
@@ -279,13 +279,19 @@ def process(
     """Process data that was returned by fetch(...) in partitions and calculate stats"""
     # Get master data set for this provider. Param, provider, is the short name
     # that is selected by the user. Use dict to translate to actual name in data.
-    name = ALIAS_TO_NAME.get(provider)
-    if name is None or start_date is None:
+    names = ALIAS_TO_NAMES.get(provider)
+    if names is None or len(names) == 0 or start_date is None:
         return None
 
-    df = rvudata.by_provider.get(name)
-    if df is None:
+    # Append all data sets associated with this provider
+    df_parts = []
+    for name in names:
+        df_part = rvudata.by_provider.get(name)
+        if df_part is not None:
+            df_parts.append(df_part)
+    if len(df_parts) == 0:
         return None
+    df = pd.concat(df_parts)
 
     # Filter data by visit date with given start and end dates
     if start_date:
@@ -319,7 +325,7 @@ def validate_visits(rvudata: FilteredRvuData, visit_log_bytes: typing.ByteString
     visit_log_df = visit_log_df.groupby("docid").last()
 
     # Source RVU data - limited to selected provider and dates
-    name = ALIAS_TO_NAME.get(rvudata.provider)
+    name = ALIAS_TO_NAMES.get(rvudata.provider)
     df = rvudata.all.by_provider.get(name)
 
     # Find rows in visit log that have the same date, MRN, and code in the RVU data

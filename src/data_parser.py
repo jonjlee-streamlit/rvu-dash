@@ -59,10 +59,13 @@ def _epic_fixedwidth_to_df(byts: bytes) -> pd.DataFrame:
     data = []
     positions = EPIC_COLUMN_POSITIONS
     for ln in filtered.splitlines():
-        data.append(tuple(ln[pos:positions[i+1]] for i, pos in enumerate(positions[:-1])))
+        data.append(tuple(ln[pos:positions[i+1]].strip() for i, pos in enumerate(positions[:-1])))
     df = pd.DataFrame(data, columns=COLUMN_NAMES)
 
-    # Parse date columns
+    # Set specific column types
+    df.cpt = pd.Categorical(df.cpt)
+    df.wrvu = pd.to_numeric(df.wrvu)
+    df.units = pd.to_numeric(df.units)
     df.posted_date = pd.to_datetime(df.posted_date, errors="coerce")
     df.date = pd.to_datetime(df.date, errors="coerce")
     

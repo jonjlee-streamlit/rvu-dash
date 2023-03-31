@@ -22,13 +22,18 @@ _After several months of not working on this project, read this to get back up t
   - `pipenv shell` to activate virtual env before doing work  
   - Pylance linter
     - Missing imports warnings: `Preferences: Open Workspace Settings > Extensions > Pylance > Python > Analysis: Extra Paths`. Add `/home/vscode/.local/share/virtualenvs/<...>/lib/python3.10/site-packages`. Replace `<...>` with actual path. This creates `.vscode/settings.json`.
-- Run locally in Codespaces
+- Configuration
+  - Password: create `.streamlit/secrets.toml`:
+  ```
+  password = "p"
+  ```
+- Codespaces
   - `bin/start.sh`: start `streamlit` server inside pipenv. [Disable CORS in codespace](https://github.com/orgs/community/discussions/18038). The interactive commands are:
     ```
     pipenv shell
     streamlit run app.py --server.enableCORS false --server enableXsrfProtection false
     ```
-- Setup VSCode to run locally
+- VSCode on macOS
   - Update Pylance Extra Paths setting as above
   - Command `Python: Select Interpreter > select virtual env from pipenv`
   - Command `Debug: Add Configuration... > Python > Module > streamlit`. Update config in `.vscode/launch.json` to:
