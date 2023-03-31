@@ -106,7 +106,16 @@ def st_rvu_by_quarter_fig(df, end_date, ct):
     ct.plotly_chart(fig, use_container_width=True)    
 
 def st_rvu_by_day_fig(df, start_date, end_date, ct):
-    # Filter out posted charges outside of the filtered time period (see comment in st_rvu_by_month_fig())
+    # Filter out posted charges outside of the filtered time period
+    #
+    # The filtering is different than quarterly and monthly graphs because
+    # we group by visit date here. The other graphs are grouped by posting date.
+    #
+    # This is because the monthly/quarterly RVU graphs will better match with
+    # the administrative data reports which are based on posting date.
+    # However, when looking at the per-day graph, it is more natural to 
+    # be to correlate number of visits on each day next to the RVUs 
+    # produced on that date. So only the by day graph is grouped by visit date.
     df = df[df["date"].dt.date >= start_date]
     df = df[df["date"].dt.date < (end_date + pd.Timedelta(days=1))]
 
