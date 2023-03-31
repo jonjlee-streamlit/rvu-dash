@@ -21,13 +21,28 @@ _After several months of not working on this project, read this to get back up t
     - All dependencies in `Pipfile` are set to `= "*"`, so updating dependencies will pull in latest major/minor versions, including breaking changes.
   - `pipenv shell` to activate virtual env before doing work  
   - Pylance linter
-    - Missing imports warnings: `VSCode Open Settings (UI) > Extensions > Pylance > Python > Analysis: Extra Paths`. Add `/home/vscode/.local/share/virtualenvs/<...>/lib/python3.10/site-packages`. Replace `<...>` with actual path.
-- Run locally
+    - Missing imports warnings: `Preferences: Open Workspace Settings > Extensions > Pylance > Python > Analysis: Extra Paths`. Add `/home/vscode/.local/share/virtualenvs/<...>/lib/python3.10/site-packages`. Replace `<...>` with actual path. This creates `.vscode/settings.json`.
+- Run locally in Codespaces
   - `bin/start.sh`: start `streamlit` server inside pipenv. [Disable CORS in codespace](https://github.com/orgs/community/discussions/18038). The interactive commands are:
     ```
     pipenv shell
     streamlit run app.py --server.enableCORS false --server enableXsrfProtection false
     ```
+- Setup VSCode to run locally
+  - Update Pylance Extra Paths setting as above
+  - Command `Python: Select Interpreter > select virtual env from pipenv`
+  - Command `Debug: Add Configuration... > Python > Module > streamlit`. Update config in `.vscode/launch.json` to:
+    ```
+    {
+      "name": "Streamlit",
+      "type": "python",
+      "request": "launch",
+      "module": "streamlit",
+      "args": ["run", "app.py"],
+      "justMyCode": true
+    }
+    ```
+  - Now F5 should start streamlit to debug ([reference](https://medium.com/codefile/how-to-run-your-streamlit-apps-in-vscode-3417da669fc))
 - Deploy to Streamlit Cloud
   - Push to repo will automatically redeploy to https://rvu-dash.streamlit.app/
   - Manage app, including secrets, at https://share.streamlit.io/
