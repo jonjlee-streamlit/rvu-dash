@@ -11,12 +11,18 @@ from dataclasses import dataclass
 from pprint import pformat
 
 # Mapping from provider's short name to key in source data
-ALIAS_TO_NAMES = {
-    "Lee": ["Lee , Jonathan MD", "LEE, JONATHAN"],
-    "Mike": ["Frostad, Michael J. MD", "FROSTAD, MICHAEL"],
-    "Gordon": ["Gordon, Methuel A. MD", "GORDON, METHUEL"],
-    "Katie": ["Hryniewicz, Kathryn N. MD", "HRYNIEWICZ, KATHRYN"],
-    "Shields": ["Shields, Maricarmen S. MD", "SHIELDS, MARICARMEN"],
+KNOWN_PROVIDER = ["Lee", "Mike", "Gordon", "Katie", "Shields"]
+PROVIDER_TO_ALIAS = {
+    "Lee , Jonathan MD": "Lee",
+    "LEE, JONATHAN": "Lee",
+    "Frostad, Michael J. MD": "Mike",
+    "FROSTAD, MICHAEL": "Mike",
+    "Gordon, Methuel A. MD": "Gordon",
+    "GORDON, METHUEL": "Gordon",
+    "Hryniewicz, Kathryn N. MD": "Katie",
+    "HRYNIEWICZ, KATHRYN": "Katie",
+    "Shields, Maricarmen S. MD": "Shields",
+    "SHIELDS, MARICARMEN": "Shields"
 }
 # Specific location strings that indicate an inpatient charge
 INPT_LOCATIONS = ["Pullman Regional Hospital IP", "Pullman Regional Hospital OP"]
@@ -97,6 +103,8 @@ def _fetch_file_or_url(filename_or_url: str) -> bytes:
 def _calc_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Add extra calculated columns to source data in-place"""
     df = df.copy()
+    # Convert provider name to single word alias
+    df["alias"] = df.provider.map(PROVIDER_TO_ALIAS)
     # Month (eg. 2022-01) and quarter (eg. 2020-Q01)
     df["month"] = df.date.dt.to_period("M").dt.strftime("%Y-%m")
     df["quarter"] = df.date.dt.to_period("Q").dt.strftime("%Y Q%q")
@@ -263,7 +271,7 @@ def initialize(filename_or_urls: list[str]) -> RvuData:
     df = _calc_columns(df)
     
     # Split into datasets for each provider
-    by_provider = _split_by(df, "provider")
+    by_provider = _split_by(df, "alias")
 
     # Return data
     return RvuData(
@@ -280,19 +288,10 @@ def process(
     """Process data that was returned by fetch(...) in partitions and calculate stats"""
     # Get master data set for this provider. Param, provider, is the short name
     # that is selected by the user. Use dict to translate to actual name in data.
-    names = ALIAS_TO_NAMES.get(provider)
-    if names is None or len(names) == 0 or start_date is None:
+    
+    if provider not in KNOWN_PROVIDER or start_date is None:
         return None
-
-    # Append all data sets associated with this provider
-    df_parts = []
-    for name in names:
-        df_part = rvudata.by_provider.get(name)
-        if df_part is not None:
-            df_parts.append(df_part)
-    if len(df_parts) == 0:
-        return None
-    df = pd.concat(df_parts)
+    df = rvudata.by_provider.get(provider)
 
     # Filter data by visit date with given start and end dates
     if start_date:
@@ -326,8 +325,7 @@ def validate_visits(rvudata: FilteredRvuData, visit_log_bytes: typing.ByteString
     visit_log_df = visit_log_df.groupby("docid").last()
 
     # Source RVU data - limited to selected provider and dates
-    name = ALIAS_TO_NAMES.get(rvudata.provider)
-    df = rvudata.all.by_provider.get(name)
+    df = rvudata.all.by_provider.get(rvudata.provider)
 
     # Find rows in visit log that have the same date, MRN, and code in the RVU data
     joined = pd.merge(visit_log_df[["date","mrn","cpt"]], df, on=["date","mrn","cpt"], how="left", suffixes=["_log","_actual"])
