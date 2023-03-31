@@ -148,9 +148,10 @@ def _calc_partitions(df):
     partitions["outpt_medicaid_encs"] = df_outpt_encs.loc[df_outpt_encs.medicaid]
 
     # Aggregate wRVUs for non-encounter charges by CPT code. We use groupby().agg() to 
-    # sum and count wrvu column. Retain cpt and desc by using ["cpt", "desc"] as the groupby key.
-    groupby_cpt = partitions["outpt_not_encs"].groupby(["cpt", "desc"], as_index=False)
-    outpt_non_enc_wrvus = groupby_cpt["wrvu"].agg(["sum", "count"]).reset_index()
+    # sum wrvu column. Retain cpt and desc by using the keys "cpt", "desc" in agg() as the groupby key.
+    # Provide count of how many rows were grouped by counting the any column (we chose provider).
+    groupby_cpt = partitions["outpt_not_encs"].groupby(["cpt"], as_index=False)
+    outpt_non_enc_wrvus = groupby_cpt.agg({"desc": "first", "wrvu": "sum", "provider": "count"}).reset_index(drop=True)
     outpt_non_enc_wrvus.columns = ["CPT", "Description", "wRVUs", "n"]
     outpt_non_enc_wrvus = outpt_non_enc_wrvus[outpt_non_enc_wrvus.wRVUs > 0]
     outpt_non_enc_wrvus.sort_values('wRVUs', ascending=False, inplace=True)
