@@ -151,6 +151,7 @@ def st_non_encs_fig(partitions, ct):
     """Bar chart of non-encounter charges (e.g. shots, fluoride, etc), sorted by most total wRVUs"""
     src = partitions["outpt_non_enc_wrvus"]
     fig = px.bar(src, title="wRVU From Other Codes", x="CPT", y="wRVUs", custom_data=["Description", "n"])
+    fig.update_xaxes(type='category')
     fig.update_traces(
         hovertemplate="<br>".join([
             "%{x} (%{customdata[0]})",
