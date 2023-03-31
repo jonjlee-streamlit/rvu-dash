@@ -6,27 +6,10 @@ import requests
 import pandas as pd
 import datetime as dt
 import streamlit as st
-from . import data_files
+from . import data_parser
 from dataclasses import dataclass
 from pprint import pformat
 
-# Columns to use from Excel sheet and the corresponding column names
-SOURCE_COLUMNS = "B,C,D,E,G,H,I,K,N,P,R,S,T"
-COLUMN_NAMES = [
-    "posted_date",
-    "date",
-    "provider",
-    "mrn",
-    "visitid",
-    "cpt",
-    "desc",
-    "units",
-    "wrvu",
-    "charge",
-    "net",
-    "insurance",
-    "location",
-]
 # Mapping from provider's short name to key in source data
 ALIAS_TO_NAME = {
     "Lee": "Lee , Jonathan MD",
@@ -88,8 +71,8 @@ class VisitLogData:
     diff: pd.DataFrame
 
 
-def _fetch_file_or_url(filename_or_url):
-    """Fetch source data as Excel file"""
+def _fetch_file_or_url(filename_or_url: str) -> bytes:
+    """Fetch source data from the given file using open() or URL using requests library"""
     logging.info("Fetching " + filename_or_url)
 
     # Try to read as local file if url doesn't start with http
@@ -110,22 +93,6 @@ def _fetch_file_or_url(filename_or_url):
 
         resp.raise_for_status()
         return resp.content
-
-
-def _excel_bytes_to_df(byts):
-    """Convert Excel file to dataframe"""
-    df = pd.read_excel(
-        io.BytesIO(byts),
-        usecols=SOURCE_COLUMNS,
-        names=COLUMN_NAMES,
-        dtype={"cpt": str},
-    )
-    # Parse date columns
-    df.posted_date = pd.to_datetime(df.posted_date, errors="coerce")
-    df.date = pd.to_datetime(df.date, errors="coerce")
-    # Filter out NaN values
-    df = df[df.posted_date.notnull() & df.provider.notnull()]
-    return df
 
 def _calc_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Add extra calculated columns to source data in-place"""
@@ -283,9 +250,13 @@ def initialize(filename_or_urls: list[str]) -> RvuData:
     # Fetch all files
     df = pd.DataFrame()
     for f in filename_or_urls:
-        # Read source Excel data and append into DataFrame
+        # Read source data
         byts = _fetch_file_or_url(f)
-        df = pd.concat([df, _excel_bytes_to_df(byts)])
+
+        # Detect file type, convert to DataFrame, and append
+        df_segment = data_parser.get_df(f, byts)
+        if (df_segment is not None):
+            df = pd.concat([df, df_segment])
 
     # Add calculated columns like month/quarter, medicaid, and inpatient
     df = _calc_columns(df)
