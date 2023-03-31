@@ -9,7 +9,7 @@ from . import auth, data, fig, dates
 def render_upload(cur_files: list = None):
     """Provide a way to upload updated data file"""
     st.header("Updated data files")
-    st.write("[Go to dashboard >](/?)")
+    st.markdown('<a href="/" target="_self">Go to dashboard &gt;</a>', unsafe_allow_html=True)
     if cur_files:
         st.write("Current data files:")
         st.write(cur_files)
