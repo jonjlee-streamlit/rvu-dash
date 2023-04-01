@@ -297,12 +297,17 @@ def process(
         return None
     df = rvudata.by_provider.get(provider)
 
-    # Filter data by visit date with given start and end dates
-    if start_date:
-        df = df[(df["date"].dt.date >= start_date) | (df["posted_date"].dt.date >= start_date)]
-    if end_date:
+    # Filter data by given start and end dates for either including transactions with visit date or posting date in range
+    dt = df["date"].dt.date
+    post_dt = df["posted_date"].dt.date
+    if start_date and end_date:
         next_day = (end_date + pd.Timedelta(days=1))
-        df = df[(df["date"].dt.date < next_day) | (df["posted_date"].dt.date < next_day)]
+        df = df[((dt >= start_date) & (dt < next_day)) | ((post_dt >= start_date) & (post_dt < next_day))]
+    elif start_date:
+        df = df[(dt >= start_date) | (post_dt.date >= start_date)]
+    elif end_date:
+        next_day = (end_date + pd.Timedelta(days=1))
+        df = df[(dt < next_day) | (post_dt < next_day)]
 
     # Parition data for viewing and calculate stats
     partitions = _calc_partitions(df)
