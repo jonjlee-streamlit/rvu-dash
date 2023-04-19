@@ -51,7 +51,7 @@ def _epic_fixedwidth_to_df(byts: bytes) -> pd.DataFrame:
     
     # Clear lines that don't start with a date (ie, either 0 or 1, which would be first digit of month)
     # then remove empty lines
-    filtered = re.sub(r'^[^0-1]+.*', '', txt, flags=re.MULTILINE)
+    filtered = re.sub(r'^[^0-1\n]+.*', '', txt, flags=re.MULTILINE)
     filtered = re.sub(r'^\s*\r?\n', '', filtered, flags=re.MULTILINE)
 
     # Convert fixed width data to dataframe
