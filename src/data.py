@@ -22,10 +22,14 @@ PROVIDER_TO_ALIAS = {
     "Hryniewicz, Kathryn N. MD": "Katie",
     "HRYNIEWICZ, KATHRYN": "Katie",
     "Shields, Maricarmen S. MD": "Shields",
-    "SHIELDS, MARICARMEN": "Shields"
+    "SHIELDS, MARICARMEN": "Shields",
 }
 # Specific location strings that indicate an inpatient charge
-INPT_LOCATIONS = ["Pullman Regional Hospital IP", "Pullman Regional Hospital OP"]
+INPT_LOCATIONS = [
+    "Pullman Regional Hospital IP",
+    "Pullman Regional Hospital OP",
+    "CC WPL PULLMAN REGIONAL HOSPITAL",
+]
 # Regex matching outpatient procedure CPT codes
 RE_PROCEDURE_CODES = "54150|41010|120[01][1-8]"
 
@@ -64,9 +68,11 @@ class FilteredRvuData:
     # Precalculated stats, e.g. # encounters, total RVUs, etc
     stats: dict[str, typing.Any]
 
+
 @dataclass
 class VisitLogData:
     """Validation data comparing a manually caputred log of visits against RVU data"""
+
     # Visit log as CSV
     visit_log_df: pd.DataFrame
     # RVU data for a specific provider and dates, taken from FilteredRvuData
@@ -99,6 +105,7 @@ def _fetch_file_or_url(filename_or_url: str) -> bytes:
 
         resp.raise_for_status()
         return resp.content
+
 
 def _calc_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Add extra calculated columns to source data in-place"""
@@ -133,6 +140,7 @@ def _split_by(df: pd.DataFrame, column: str) -> dict[str, pd.DataFrame]:
 
     return views
 
+
 def _calc_partitions(df):
     """Partition data into sets meaningful to a user and used for calculating statistics later"""
     partitions = {}
@@ -146,7 +154,9 @@ def _calc_partitions(df):
     ]
     partitions["outpt_all"] = df_outpt_all
     partitions["outpt_encs"] = df_outpt_encs
-    partitions["outpt_not_encs"] = df_outpt_all.loc[~df_outpt_all.index.isin(df_outpt_encs.index)]
+    partitions["outpt_not_encs"] = df_outpt_all.loc[
+        ~df_outpt_all.index.isin(df_outpt_encs.index)
+    ]
     partitions["wcc_encs"] = df.loc[
         (~df.inpatient) & df.cpt.apply(lambda cpt: bool(r_wcc.match(cpt)))
     ]
@@ -155,15 +165,19 @@ def _calc_partitions(df):
     ]
     partitions["outpt_medicaid_encs"] = df_outpt_encs.loc[df_outpt_encs.medicaid]
 
-    # Aggregate wRVUs for non-encounter charges by CPT code. We use groupby().agg() to 
+    # Aggregate wRVUs for non-encounter charges by CPT code. We use groupby().agg() to
     # sum wrvu column. Retain cpt and desc by using the keys "cpt", "desc" in agg() as the groupby key.
     # Provide count of how many rows were grouped by counting the any column (we chose provider).
     groupby_cpt = partitions["outpt_not_encs"].groupby(["cpt"], as_index=False)
-    outpt_non_enc_wrvus = groupby_cpt.agg({"desc": "first", "wrvu": "sum", "provider": "count"}).reset_index(drop=True)
+    outpt_non_enc_wrvus = groupby_cpt.agg(
+        {"desc": "first", "wrvu": "sum", "provider": "count"}
+    ).reset_index(drop=True)
     outpt_non_enc_wrvus.columns = ["CPT", "Description", "wRVUs", "n"]
     outpt_non_enc_wrvus = outpt_non_enc_wrvus[outpt_non_enc_wrvus.wRVUs > 0]
-    outpt_non_enc_wrvus.sort_values('wRVUs', ascending=False, inplace=True)
-    outpt_non_enc_wrvus.Description = outpt_non_enc_wrvus.Description.apply(lambda x: x[:42] + "..." if len(x) > 45 else x)
+    outpt_non_enc_wrvus.sort_values("wRVUs", ascending=False, inplace=True)
+    outpt_non_enc_wrvus.Description = outpt_non_enc_wrvus.Description.apply(
+        lambda x: x[:42] + "..." if len(x) > 45 else x
+    )
     partitions["outpt_non_enc_wrvus"] = outpt_non_enc_wrvus
 
     # Hospital charges - filter by service location and CPT codes
@@ -174,7 +188,9 @@ def _calc_partitions(df):
     inpt_codes += "|9925[3-5]"  # inpatient consult
     inpt_codes += "|9921[89]|9922[1-6]|9923[1-9]"  # peds admit, progress, d/c
     r_inpt = re.compile(inpt_codes)
-    df_inpt_encs = df.loc[df.inpatient & df.cpt.apply(lambda cpt: bool(r_inpt.match(cpt)))]
+    df_inpt_encs = df.loc[
+        df.inpatient & df.cpt.apply(lambda cpt: bool(r_inpt.match(cpt)))
+    ]
     partitions["inpt_all"] = df.loc[df.inpatient]
     partitions["inpt_encs"] = df_inpt_encs
 
@@ -183,11 +199,13 @@ def _calc_partitions(df):
 
     # Encounters with zero or negative charges, but had at least one charge that was > 0 rvus, so can,
     # for example, include incorrectly rebilled 99213/99212s, but exclude COVID shot-only visits
-    #visitids_negative_rvus = df_all_encs[df_all_encs.wrvu <= 0].visitid.unique()
-    #partitions["neg_wrvu_encs"] = df_all_encs[df_all_encs.visitid.isin(visitids_negative_rvus)]
+    # visitids_negative_rvus = df_all_encs[df_all_encs.wrvu <= 0].visitid.unique()
+    # partitions["neg_wrvu_encs"] = df_all_encs[df_all_encs.visitid.isin(visitids_negative_rvus)]
     ttl_rvu_by_visit = df.groupby("visitid")["wrvu"].sum()
     max_rvu_by_visit = df.groupby("visitid")["wrvu"].max()
-    visitids_negative_rvus = ttl_rvu_by_visit[(ttl_rvu_by_visit<=0) & (max_rvu_by_visit>0)].index.unique()
+    visitids_negative_rvus = ttl_rvu_by_visit[
+        (ttl_rvu_by_visit <= 0) & (max_rvu_by_visit > 0)
+    ].index.unique()
     partitions["neg_wrvu_encs"] = df[df.visitid.isin(visitids_negative_rvus)]
 
     return partitions
@@ -204,7 +222,9 @@ def _calc_stats(df, partitions):
 
     # group rows by date and MRN since we can only see each pt once per day, and count number of rows
     stats["ttl_encs"] = len(partitions["all_encs"].groupby(["date", "mrn"]))
-    stats["wrvu_per_encs"] = stats["ttl_wrvu"] / stats["ttl_encs"] if stats["ttl_encs"] > 0 else 0
+    stats["wrvu_per_encs"] = (
+        stats["ttl_wrvu"] / stats["ttl_encs"] if stats["ttl_encs"] > 0 else 0
+    )
 
     # Count of various outpt codes: 99211-99215, TCM, and procedure codes
     cptstr = df.cpt.str
@@ -231,15 +251,29 @@ def _calc_stats(df, partitions):
     stats["outpt_num_days"] = len(partitions["outpt_encs"].date.unique())
     stats["outpt_num_pts"] = len(partitions["outpt_encs"].groupby(["date", "mrn"]))
     stats["outpt_ttl_wrvu"] = partitions["outpt_encs"].wrvu.sum()
-    stats["outpt_avg_wrvu_per_pt"] = stats["outpt_ttl_wrvu"] / stats["outpt_num_pts"] if stats["outpt_num_pts"] > 0 else 0
-    stats["outpt_num_pts_per_day"] = stats["outpt_num_pts"] / stats["outpt_num_days"] if stats["outpt_num_days"] > 0 else 0
-    stats["outpt_wrvu_per_day"] = stats["outpt_ttl_wrvu"] / stats["outpt_num_days"] if stats["outpt_num_days"] > 0 else 0
+    stats["outpt_avg_wrvu_per_pt"] = (
+        stats["outpt_ttl_wrvu"] / stats["outpt_num_pts"]
+        if stats["outpt_num_pts"] > 0
+        else 0
+    )
+    stats["outpt_num_pts_per_day"] = (
+        stats["outpt_num_pts"] / stats["outpt_num_days"]
+        if stats["outpt_num_days"] > 0
+        else 0
+    )
+    stats["outpt_wrvu_per_day"] = (
+        stats["outpt_ttl_wrvu"] / stats["outpt_num_days"]
+        if stats["outpt_num_days"] > 0
+        else 0
+    )
     stats["outpt_medicaid_wrvu"] = partitions["outpt_medicaid_encs"].wrvu.sum()
     stats["outpt_medicaid_pts"] = len(
         partitions["outpt_medicaid_encs"].groupby(["date", "mrn"])
     )
     stats["outpt_medicaid_wrvu_per_pt"] = (
-        stats["outpt_medicaid_wrvu"] / stats["outpt_medicaid_pts"] if stats["outpt_medicaid_pts"] > 0 else 0
+        stats["outpt_medicaid_wrvu"] / stats["outpt_medicaid_pts"]
+        if stats["outpt_medicaid_pts"] > 0
+        else 0
     )
 
     # Inpatient stats
@@ -264,7 +298,7 @@ def initialize(filename_or_urls: list[str]) -> RvuData:
 
         # Detect file type, convert to DataFrame, and append
         df_segment = data_parser.get_df(f, byts)
-        if (df_segment is not None):
+        if df_segment is not None:
             df = pd.concat([df, df_segment])
 
     # Check if for no data available
@@ -273,7 +307,7 @@ def initialize(filename_or_urls: list[str]) -> RvuData:
 
     # Add calculated columns like month/quarter, medicaid, and inpatient
     df = _calc_columns(df)
-    
+
     # Split into datasets for each provider
     by_provider = _split_by(df, "alias")
 
@@ -292,7 +326,7 @@ def process(
     """Process data that was returned by fetch(...) in partitions and calculate stats"""
     # Get master data set for this provider. Param, provider, is the short name
     # that is selected by the user. Use dict to translate to actual name in data.
-    
+
     if provider not in KNOWN_PROVIDER or start_date is None:
         return None
     df = rvudata.by_provider.get(provider)
@@ -301,12 +335,15 @@ def process(
     dt = df["date"].dt.date
     post_dt = df["posted_date"].dt.date
     if start_date and end_date:
-        next_day = (end_date + pd.Timedelta(days=1))
-        df = df[((dt >= start_date) & (dt < next_day)) | ((post_dt >= start_date) & (post_dt < next_day))]
+        next_day = end_date + pd.Timedelta(days=1)
+        df = df[
+            ((dt >= start_date) & (dt < next_day))
+            | ((post_dt >= start_date) & (post_dt < next_day))
+        ]
     elif start_date:
         df = df[(dt >= start_date) | (post_dt.date >= start_date)]
     elif end_date:
-        next_day = (end_date + pd.Timedelta(days=1))
+        next_day = end_date + pd.Timedelta(days=1)
         df = df[(dt < next_day) | (post_dt < next_day)]
 
     # Parition data for viewing and calculate stats
@@ -323,13 +360,20 @@ def process(
         stats=stats,
     )
 
-def validate_visits(rvudata: FilteredRvuData, visit_log_bytes: typing.ByteString) -> VisitLogData:
+
+def validate_visits(
+    rvudata: FilteredRvuData, visit_log_bytes: typing.ByteString
+) -> VisitLogData:
     """Validate the entries in a visit log against the charges in the rvu data"""
     if rvudata is None or visit_log_bytes is None:
         return None
 
     # Read visit log as CSV
-    visit_log_df = pd.read_csv(io.BytesIO(visit_log_bytes), names=["date", "mrn", "docid", "cpt"], dtype={"cpt": str})
+    visit_log_df = pd.read_csv(
+        io.BytesIO(visit_log_bytes),
+        names=["date", "mrn", "docid", "cpt"],
+        dtype={"cpt": str},
+    )
     visit_log_df.date = pd.to_datetime(visit_log_df.date, errors="coerce")
     # Drop duplicates by docid
     visit_log_df = visit_log_df.groupby("docid").last()
@@ -338,19 +382,22 @@ def validate_visits(rvudata: FilteredRvuData, visit_log_bytes: typing.ByteString
     df = rvudata.all.by_provider.get(rvudata.provider)
 
     # Find rows in visit log that have the same date, MRN, and code in the RVU data
-    joined = pd.merge(visit_log_df[["date","mrn","cpt"]], df, on=["date","mrn","cpt"], how="left", suffixes=["_log","_actual"])
-    
-    # First keep rows that have a matching RVU data entry 
+    joined = pd.merge(
+        visit_log_df[["date", "mrn", "cpt"]],
+        df,
+        on=["date", "mrn", "cpt"],
+        how="left",
+        suffixes=["_log", "_actual"],
+    )
+
+    # First keep rows that have a matching RVU data entry
     validated = joined[~joined.posted_date.isna()]
-    
+
     # Process rows that don't have matching data
     diff = joined[joined.posted_date.isna()]
     diff = diff[["date", "mrn", "cpt"]]
     diff = diff.drop_duplicates()
 
     return VisitLogData(
-        visit_log_df=visit_log_df,
-        df=df,
-        validated=validated,
-        diff=diff
+        visit_log_df=visit_log_df, df=df, validated=validated, diff=diff
     )
