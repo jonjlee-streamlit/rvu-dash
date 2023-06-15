@@ -7,7 +7,7 @@ def authenticate():
 
     def password_entered():
         """Called when password input changes"""
-        if st.session_state["password"] == os.environ("STREAMLIT_PASS"):
+        if st.session_state["password"] == os.environ["STREAMLIT_PASS"]:
             st.session_state["authn"] = True
             del st.session_state["password"]  # don't store password
         else:
