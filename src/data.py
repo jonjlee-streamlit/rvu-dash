@@ -284,7 +284,7 @@ def _calc_stats(df, partitions):
 
 
 # Use allow_output_mutation to avoid hashing return value to improve performance
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=None, persist="disk")
 def initialize(filename_or_urls: list[str]) -> RvuData:
     """Main entry point: retrieve file, src, and parse into DataFrame"""
     if filename_or_urls is None:

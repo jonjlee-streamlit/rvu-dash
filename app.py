@@ -1,8 +1,13 @@
 import streamlit as st
 from src import auth, data_files, data, ui
 
+
 def run():
     """Main streamlit app entry point"""
+    # Fetch source data - do this before auth to ensure all requests to app cause data refresh
+    with st.spinner("Initializing..."):
+        rvudata = data.initialize(data_files.get())
+
     # Authenticate user
     if not auth.authenticate():
         return st.stop()
@@ -23,10 +28,6 @@ def run():
             st.cache_data.clear()
         return st.stop()
 
-    # Fetch source data
-    with st.spinner("Initializing..."):
-        rvudata = data.initialize(data_files.get())
-    
     # If no data available, display message and stop
     if rvudata is None:
         st.write("No data available. Contact administrator for details.")
@@ -39,7 +40,7 @@ def run():
         end_date,
         compare_start_date,
         compare_end_date,
-        visit_log_file
+        visit_log_file,
     ) = ui.render_sidebar(rvudata.start_date, rvudata.end_date)
 
     # Filter data and calculate stats
@@ -58,5 +59,6 @@ def run():
     # Show main display
     ui.render_main(filtered, compare, visit_data)
 
-st.set_page_config(page_title='RVU Dashboard', layout="wide")
+
+st.set_page_config(page_title="RVU Dashboard", layout="wide")
 run()
