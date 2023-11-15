@@ -28,7 +28,7 @@ def render_sidebar(data_start_date: date, data_end_date: date) -> tuple[str, dat
     # Filter options for providers
     provider = config_ct.selectbox(
         "Provider:",
-        ["Select a Provider", "Gordon", "Katie", "Lee", "Mike", "Shields"],
+        ["Select a Provider", "Gordon", "Katie", "Kenzie", "Lee", "Mike", "Shields"],
     )
 
     # Preset date filters

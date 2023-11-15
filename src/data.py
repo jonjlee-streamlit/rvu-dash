@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pprint import pformat
 
 # Mapping from provider's short name to key in source data
-KNOWN_PROVIDER = ["Lee", "Mike", "Gordon", "Katie", "Shields"]
+KNOWN_PROVIDER = ["Lee", "Mike", "Gordon", "Katie", "Kenzie", "Shields"]
 PROVIDER_TO_ALIAS = {
     "Lee , Jonathan MD": "Lee",
     "LEE, JONATHAN": "Lee",
@@ -21,6 +21,7 @@ PROVIDER_TO_ALIAS = {
     "GORDON, METHUEL": "Gordon",
     "Hryniewicz, Kathryn N. MD": "Katie",
     "HRYNIEWICZ, KATHRYN": "Katie",
+    "RINALDI, MACKENZIE": "Kenzie",
     "Shields, Maricarmen S. MD": "Shields",
     "SHIELDS, MARICARMEN": "Shields",
 }
