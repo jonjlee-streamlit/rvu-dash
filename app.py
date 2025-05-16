@@ -13,8 +13,8 @@ def run():
         return st.stop()
 
     # Show update data screen
-    qps = st.experimental_get_query_params()
-    if qps.get("update") == ["1"]:
+    qps = st.query_params
+    if qps.get("update") == "1":
         # Allow user to upload new data files
         files, remove_existing = ui.render_upload(data_files.get_local())
         if files:

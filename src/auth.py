@@ -7,7 +7,7 @@ def authenticate():
 
     def password_entered():
         """Called when password input changes"""
-        if st.session_state["password"] == os.environ.get("STREAMLIT_PASS"):
+        if st.session_state.get("password") == os.environ.get("STREAMLIT_PASS"):
             st.session_state["authn"] = True
             del st.session_state["password"]  # don't store password
         else:
@@ -25,7 +25,7 @@ def authenticate():
             key="password",
         )
         return False
-    elif not st.session_state["authn"]:
+    elif not st.session_state.get("authn"):
         # Password not correct, show input + error.
         _, ct, _ = st.columns([1, 2, 1])
         ct.title("RVU Dashboard")
